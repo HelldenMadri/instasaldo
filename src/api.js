@@ -8,9 +8,17 @@ if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 't
 }
 import { createClient } from '@supabase/supabase-js';
 
-// Get credentials in Node / Jest environment or browser
-const SUPABASE_URL = (typeof process !== 'undefined' && process.env ? process.env.VITE_SUPABASE_URL : '') || '';
-const SUPABASE_ANON_KEY = (typeof process !== 'undefined' && process.env ? process.env.VITE_SUPABASE_ANON_KEY : '') || '';
+// Get credentials from environment variables or use configured fallbacks
+const DEFAULT_URL = 'https://hptaarigzvndqkhpaodp.supabase.co';
+const DEFAULT_KEY = 'sb_publishable_pfg6HPxYxwhlog3l42pQ-A_fKbTRLI2';
+
+const SUPABASE_URL = 
+  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) || 
+  DEFAULT_URL;
+
+const SUPABASE_ANON_KEY = 
+  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) || 
+  DEFAULT_KEY;
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

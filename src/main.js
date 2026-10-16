@@ -259,7 +259,27 @@ import {
     }
   }
 
-  // ---- Login ----
+  // ---- Login & Visual Feedback ----
+  function showLoginFeedback(msg, type = 'error') {
+    const fb = document.getElementById('login-feedback');
+    if (!fb) return;
+    fb.textContent = msg;
+    fb.style.display = 'block';
+    if (type === 'error') {
+      fb.style.backgroundColor = 'var(--danger-light)';
+      fb.style.color = 'var(--danger)';
+      fb.style.border = '1px solid var(--danger)';
+    } else if (type === 'success') {
+      fb.style.backgroundColor = 'var(--green-light)';
+      fb.style.color = 'var(--green-dark)';
+      fb.style.border = '1px solid var(--green)';
+    } else {
+      fb.style.backgroundColor = 'var(--blue-light)';
+      fb.style.color = 'var(--blue-accent)';
+      fb.style.border = '1px solid var(--blue-accent)';
+    }
+  }
+
   function initLogin() {
     const user = getUser();
     if (user) {
@@ -272,14 +292,36 @@ import {
       e.preventDefault();
       const email = els.inputEmail.value.trim();
       const password = els.inputSenha.value;
-      if (!email || !password) return;
+      if (!email || !password) {
+        showLoginFeedback('Por favor, preencha email e senha.');
+        return;
+      }
+      
+      const btnEntrar = document.getElementById('btn-entrar') || els.loginForm.querySelector('button[type="submit"]');
+      const originalText = btnEntrar ? btnEntrar.textContent : 'Entrar';
+      if (btnEntrar) {
+        btnEntrar.disabled = true;
+        btnEntrar.textContent = 'Entrando...';
+      }
+      showLoginFeedback('Verificando credenciais...', 'info');
+
       try {
         await loginUser(email, password);
         setUser(email);
         showDashboard();
         showToast(`Bem-vindo, ${email}!`);
       } catch (error) {
-        showToast(error.message || 'Erro ao fazer login');
+        let msg = error.message || 'Erro ao fazer login';
+        if (msg.includes('Invalid login credentials')) {
+          msg = 'Email ou senha incorretos.';
+        }
+        showLoginFeedback(msg, 'error');
+        showToast(msg);
+      } finally {
+        if (btnEntrar) {
+          btnEntrar.disabled = false;
+          btnEntrar.textContent = originalText;
+        }
       }
     });
   }
@@ -290,6 +332,8 @@ import {
       clearUser();
       if (els.inputEmail) els.inputEmail.value = '';
       if (els.inputSenha) els.inputSenha.value = '';
+      const fb = document.getElementById('login-feedback');
+      if (fb) fb.style.display = 'none';
       showScreen('login');
     });
   }
@@ -304,20 +348,28 @@ import {
   }
 
   // ---- Forgot password ----
+  window.handleForgotPassword = async function () {
+    const email = els.inputEmail?.value.trim();
+    if (!email) {
+      showLoginFeedback('Digite seu email no campo acima para receber o link de recuperação.', 'error');
+      showToast('Informe o email para recuperação');
+      return;
+    }
+    showLoginFeedback(`Enviando email de recuperação para ${email}...`, 'info');
+    try {
+      await resetPassword(email);
+      showLoginFeedback(`Email de recuperação enviado para ${email}! Verifique sua caixa de entrada.`, 'success');
+      showToast('Email de recuperação enviado!');
+    } catch (err) {
+      showLoginFeedback(err.message || 'Erro ao recuperar senha', 'error');
+      showToast(err.message || 'Erro ao recuperar senha');
+    }
+  };
+
   if (els.forgotPassword) {
     els.forgotPassword.addEventListener('click', async (e) => {
       e.preventDefault();
-      const email = els.inputEmail?.value.trim();
-      if (!email) {
-        showToast('Informe o email para recuperação');
-        return;
-      }
-      try {
-        await resetPassword(email);
-        showToast('Email de recuperação enviado!');
-      } catch (err) {
-        showToast(err.message || 'Erro ao recuperar senha');
-      }
+      window.handleForgotPassword();
     });
   }
 

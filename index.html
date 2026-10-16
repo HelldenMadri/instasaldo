@@ -16,6 +16,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script>
+    // Unregister legacy Service Workers to prevent stale cache issues
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          registration.update();
+        }
+      });
+    }
+  </script>
 </head>
 
 <body>
@@ -29,6 +39,10 @@
       </div>
       <h1 class="login-title" style="display: none;">InstalaSaldo</h1>
       <p class="login-subtitle" style="margin-bottom: 32px;">Controle de sinal e restante das suas instalações</p>
+      
+      <!-- Mensagem de status / erro no login -->
+      <div id="login-feedback" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; text-align: center;"></div>
+
       <form id="login-form" class="login-form">
         <div class="input-group">
           <label for="input-email">Email</label>
@@ -37,14 +51,14 @@
         <div class="input-group">
           <label for="input-senha">Senha</label>
           <div style="position:relative;">
-            <input type="password" id="input-senha" placeholder="Digite sua senha" autocomplete="current-password" required style="width:100%; padding-right:40px;">
-            <button type="button" id="btn-show-senha" title="Mostrar senha" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px;">👁️</button>
+            <input type="password" id="input-senha" placeholder="Digite sua senha" autocomplete="current-password" required style="width:100%; padding-right:45px;">
+            <button type="button" id="btn-show-senha" onclick="const p=document.getElementById('input-senha'); if(p){const isT=p.type==='text'; p.type=isT?'password':'text'; this.textContent=isT?'👁️':'🙈';}" title="Mostrar senha" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; padding:4px;">👁️</button>
           </div>
         </div>
         <div class="input-group" style="display:flex; justify-content:space-between; align-items:center;">
-          <a href="#" id="forgot-password" style="font-size: 13px; color: var(--blue-accent); text-decoration: none;">Esqueceu a senha?</a>
+          <a href="javascript:void(0)" id="forgot-password" onclick="window.handleForgotPassword && window.handleForgotPassword()" style="font-size: 13px; color: var(--blue-accent); text-decoration: none; cursor: pointer;">Esqueceu a senha?</a>
         </div>
-        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">
+        <button type="submit" id="btn-entrar" class="btn btn-primary btn-block" style="margin-top: 16px;">
           Entrar
         </button>
       </form>
