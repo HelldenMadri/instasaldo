@@ -1,6 +1,6 @@
 {
   "name": "instasaldo",
-  "version": "1.0.0",
+  "type": "module",
   "description": "InstalaSaldo PWA - gerenciamento de serviços de instalação",
   "main": "src/main.js",
   "scripts": {
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.0",
+    "dotenv": "^18.0.8",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",

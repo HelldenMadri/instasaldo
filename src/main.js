@@ -1,11 +1,17 @@
 // src/main.js
-import { fetchServices as getAllServices, createService as addService, updateService, deleteService } from './api.js';
-import { createClient } from '@supabase/supabase-js';
-
-// Supabase client (optional, can be used later)
-const SUPABASE_URL = 'https://hptaarigzvndqkhpaodp.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_pfg6HPxYxwhlog3l42pQ-A_fKbTRLI2';
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+import {
+  fetchServices as getAllServices,
+  createService as addService,
+  updateService,
+  deleteService,
+  loginUser,
+  resetPassword,
+  isSuperAdmin,
+  fetchUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from './api.js';
 
 (function () {
   'use strict';
@@ -16,12 +22,16 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     dashboard: document.getElementById('screen-dashboard'),
     newService: document.getElementById('screen-new-service'),
     editService: document.getElementById('screen-edit-service'),
+    admin: document.getElementById('screen-admin'),
   };
 
   const els = {
     // Login
     loginForm: document.getElementById('login-form'),
-    inputNome: document.getElementById('input-nome'),
+    inputEmail: document.getElementById('input-email'),
+    inputSenha: document.getElementById('input-senha'),
+    btnShowSenha: document.getElementById('btn-show-senha'),
+    forgotPassword: document.getElementById('forgot-password'),
 
     // Dashboard
     greetingTime: document.getElementById('greeting-time'),
@@ -33,6 +43,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     emptyState: document.getElementById('empty-state'),
     btnNovoServico: document.getElementById('btn-novo-servico'),
     btnLogout: document.getElementById('btn-logout'),
+    btnAdminNav: document.getElementById('btn-admin-nav'),
 
     // Tabs
     tabResumo: document.getElementById('tab-resumo'),
@@ -60,6 +71,11 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     btnVoltarEdit: document.getElementById('btn-voltar-edit'),
     btnDeleteService: document.getElementById('btn-delete-service'),
 
+    // Admin Dashboard
+    btnVoltarAdmin: document.getElementById('btn-voltar-admin'),
+    btnAdminAddUser: document.getElementById('btn-admin-add-user'),
+    adminUsersList: document.getElementById('admin-users-list'),
+
     // Toast
     toast: document.getElementById('toast'),
   };
@@ -81,7 +97,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
   }
   function formatCurrency(value) {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
   function formatDate(dateStr) {
     if (!dateStr) return '';
@@ -96,9 +112,15 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     return 'Boa noite,';
   }
   function showToast(message) {
+    if (!els.toast) return;
     els.toast.textContent = message;
     els.toast.classList.add('show');
     setTimeout(() => els.toast.classList.remove('show'), 2500);
+  }
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
   }
 
   // ---- Screen Navigation ----
@@ -127,6 +149,116 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     });
   }
 
+  // ---- Super Admin Controls & Dashboard ----
+  function checkSuperAdminAccess() {
+    const currentUser = getUser();
+    const isSuper = isSuperAdmin(currentUser);
+
+    // Show/hide gear button in header
+    if (els.btnAdminNav) {
+      els.btnAdminNav.style.display = isSuper ? 'inline-flex' : 'none';
+    }
+
+    // Protect edit buttons if not super admin
+    // If you want ONLY super admin to edit services, we can enforce it:
+    return isSuper;
+  }
+
+  async function showAdminDashboard() {
+    const currentUser = getUser();
+    if (!isSuperAdmin(currentUser)) {
+      showToast('Acesso negado: Somente o Super Admin pode acessar este painel.');
+      return;
+    }
+    showScreen('admin');
+    await renderAdminUsers();
+  }
+
+  async function renderAdminUsers() {
+    if (!els.adminUsersList) return;
+    els.adminUsersList.innerHTML = '<p style="font-size:13px; color:var(--text-secondary);">Carregando usuários...</p>';
+
+    try {
+      let users = await fetchUsers();
+      // Ensure super admin is included in the list view if table is empty
+      const superAdminFound = users.some((u) => isSuperAdmin(u.email));
+      if (!superAdminFound) {
+        users.unshift({
+          id: 'super-admin-root',
+          email: 'agenciavallor01@gmail.com',
+          role: 'Super Admin',
+          nome: 'Administrador Principal',
+          status: 'Ativo',
+        });
+      }
+
+      els.adminUsersList.innerHTML = users
+        .map((u) => {
+          const isRoot = isSuperAdmin(u.email);
+          return `
+            <div class="service-item quitado" style="margin-bottom: 12px; border-left-color: ${isRoot ? 'var(--blue-accent)' : 'var(--orange)'};">
+              <div class="service-item-header">
+                <div>
+                  <div class="service-cliente" style="font-weight: 700;">${escapeHtml(u.email)}</div>
+                  <div class="service-tipo">${escapeHtml(u.nome || (isRoot ? 'Super Administrador' : 'Técnico / Usuário'))}</div>
+                </div>
+                <span class="service-status ${isRoot ? 'quitado' : 'pendente'}">
+                  ${isRoot ? 'Super Admin' : escapeHtml(u.role || 'Usuário')}
+                </span>
+              </div>
+              <div class="service-values" style="margin: 8px 0;">
+                <div class="service-val">
+                  <div class="service-val-label">ID</div>
+                  <div style="font-size: 11px; color: var(--text-muted); word-break: break-all;">${escapeHtml(u.id)}</div>
+                </div>
+                <div class="service-val">
+                  <div class="service-val-label">Status</div>
+                  <div style="font-size: 12px; font-weight: 600; color: var(--green-dark);">${escapeHtml(u.status || 'Ativo')}</div>
+                </div>
+              </div>
+              <div class="service-actions" style="margin-top: 10px;">
+                <button class="btn-editar btn-edit-user" data-id="${u.id}" data-email="${u.email}" data-role="${u.role || ''}">✏️ Editar Usuário</button>
+                ${!isRoot ? `<button class="btn-quitar btn-del-user" data-id="${u.id}" style="background-color: var(--danger); color: white;">🗑️ Remover</button>` : ''}
+              </div>
+            </div>`;
+        })
+        .join('');
+
+      // Bind admin actions
+      els.adminUsersList.querySelectorAll('.btn-edit-user').forEach((btn) => {
+        btn.addEventListener('click', () => handleEditUser(btn.dataset.id, btn.dataset.email, btn.dataset.role));
+      });
+      els.adminUsersList.querySelectorAll('.btn-del-user').forEach((btn) => {
+        btn.addEventListener('click', () => handleDeleteUser(btn.dataset.id));
+      });
+    } catch (err) {
+      els.adminUsersList.innerHTML = `<p style="color:var(--danger); font-size:13px;">Erro ao carregar usuários: ${escapeHtml(err.message)}</p>`;
+    }
+  }
+
+  async function handleEditUser(id, currentEmail, currentRole) {
+    const newRole = prompt(`Alterar cargo/papel para ${currentEmail}:`, currentRole || 'Usuário');
+    if (newRole === null) return;
+    try {
+      await updateUser(id, { role: newRole });
+      showToast('Usuário atualizado com sucesso!');
+      await renderAdminUsers();
+    } catch (err) {
+      showToast(err.message || 'Erro ao atualizar usuário');
+    }
+  }
+
+  async function handleDeleteUser(id) {
+    if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
+    try {
+      await deleteUser(id);
+      showToast('Usuário excluído!');
+      await renderAdminUsers();
+    } catch (err) {
+      showToast(err.message || 'Erro ao remover usuário');
+    }
+  }
+
   // ---- Login ----
   function initLogin() {
     const user = getUser();
@@ -135,32 +267,80 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
   }
 
-  els.loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const nome = els.inputNome.value.trim();
-    if (!nome) return;
-    setUser(nome);
-    showDashboard();
-    showToast(`Bem-vindo, ${nome}!`);
-  });
+  if (els.loginForm) {
+    els.loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = els.inputEmail.value.trim();
+      const password = els.inputSenha.value;
+      if (!email || !password) return;
+      try {
+        await loginUser(email, password);
+        setUser(email);
+        showDashboard();
+        showToast(`Bem-vindo, ${email}!`);
+      } catch (error) {
+        showToast(error.message || 'Erro ao fazer login');
+      }
+    });
+  }
 
-  els.btnLogout.addEventListener('click', () => {
-    clearUser();
-    els.inputNome.value = '';
-    showScreen('login');
-  });
+  // ---- Logout ----
+  if (els.btnLogout) {
+    els.btnLogout.addEventListener('click', () => {
+      clearUser();
+      if (els.inputEmail) els.inputEmail.value = '';
+      if (els.inputSenha) els.inputSenha.value = '';
+      showScreen('login');
+    });
+  }
 
-  // ---- Dashboard ----
+  // ---- Show password toggle ----
+  if (els.btnShowSenha && els.inputSenha) {
+    els.btnShowSenha.addEventListener('click', () => {
+      const isPassword = els.inputSenha.type === 'password';
+      els.inputSenha.type = isPassword ? 'text' : 'password';
+      els.btnShowSenha.textContent = isPassword ? '🙈' : '👁️';
+    });
+  }
+
+  // ---- Forgot password ----
+  if (els.forgotPassword) {
+    els.forgotPassword.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = els.inputEmail?.value.trim();
+      if (!email) {
+        showToast('Informe o email para recuperação');
+        return;
+      }
+      try {
+        await resetPassword(email);
+        showToast('Email de recuperação enviado!');
+      } catch (err) {
+        showToast(err.message || 'Erro ao recuperar senha');
+      }
+    });
+  }
+
   function showDashboard() {
     showScreen('dashboard');
     const user = getUser();
-    els.greetingTime.textContent = getGreetingTime();
-    els.greetingName.textContent = user ? `${user}.` : 'Usuário.';
+    if (els.greetingTime) els.greetingTime.textContent = getGreetingTime();
+    if (els.greetingName) {
+      els.greetingName.textContent = user
+        ? isSuperAdmin(user)
+          ? `${user} (Super Admin)`
+          : `${user}.`
+        : 'Usuário.';
+    }
+    checkSuperAdminAccess();
     renderServices();
   }
 
   async function renderServices() {
     const services = await getAllServices();
+    const currentUser = getUser();
+    const isSuper = isSuperAdmin(currentUser);
+
     // Calculate totals
     let totalRecebido = 0;
     let totalPendente = 0;
@@ -176,70 +356,68 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     if (els.servicosPendentes) els.servicosPendentes.textContent = `Vendas: ${countPendentes}`;
 
     if (services.length === 0) {
-      els.servicesList.innerHTML = '';
-      els.emptyState.style.display = 'block';
+      if (els.servicesList) els.servicesList.innerHTML = '';
+      if (els.emptyState) els.emptyState.style.display = 'block';
       return;
     }
-    els.emptyState.style.display = 'none';
+    if (els.emptyState) els.emptyState.style.display = 'none';
+
     const sorted = [...services].sort((a, b) => {
       const saldoA = a.valorTotal - a.valorRecebido;
       const saldoB = b.valorTotal - b.valorRecebido;
       const statusA = saldoA > 0 ? 0 : 1;
       const statusB = saldoB > 0 ? 0 : 1;
       if (statusA !== statusB) return statusA - statusB;
-      return a.cliente.localeCompare(b.cliente);
+      return (a.cliente || '').localeCompare(b.cliente || '');
     });
-    els.servicesList.innerHTML = sorted
-      .map((s, i) => {
-        const saldo = s.valorTotal - s.valorRecebido;
-        const status = saldo > 0 ? 'pendente' : 'quitado';
-        const statusLabel = saldo > 0 ? 'Pendente' : 'Quitado';
-        const dateStr = s.dataPagamentoFinal ? `📅 Pagamento: ${formatDate(s.dataPagamentoFinal)}` : '';
-        return `
-          <div class="service-item ${status}" style="animation-delay: ${i * 0.05}s">
-            <div class="service-item-header">
-              <div>
-                <div class="service-cliente">${escapeHtml(s.cliente)}</div>
-                ${s.tipoInstalacao ? `<div class="service-tipo">${escapeHtml(s.tipoInstalacao)}</div>` : ''}
-              </div>
-              <span class="service-status ${status}">${statusLabel}</span>
-            </div>
-            <div class="service-values">
-              <div class="service-val">
-                <div class="service-val-label">Total</div>
-                <div class="service-val-amount total">${formatCurrency(s.valorTotal)}</div>
-              </div>
-              <div class="service-val">
-                <div class="service-val-label">Recebido</div>
-                <div class="service-val-amount recebido">${formatCurrency(s.valorRecebido)}</div>
-              </div>
-              <div class="service-val">
-                <div class="service-val-label">Saldo</div>
-                <div class="service-val-amount saldo">${formatCurrency(Math.max(0, saldo))}</div>
-              </div>
-            </div>
-            ${dateStr ? `<div class="service-date">${dateStr}</div>` : ''}
-            <div class="service-actions">
-              <button class="btn-quitar" data-id="${s.id}" ${status === 'quitado' ? 'disabled' : ''}>${status === 'quitado' ? '✓ Quitado' : '✓ Marcar como Quitado'}</button>
-              <button class="btn-editar" data-id="${s.id}">✏️ Editar</button>
-            </div>
-          </div>`;
-      })
-      .join('');
 
-    // Bind action buttons
-    els.servicesList.querySelectorAll('.btn-quitar:not([disabled])').forEach((btn) => {
-      btn.addEventListener('click', () => quitarServico(btn.dataset.id));
-    });
-    els.servicesList.querySelectorAll('.btn-editar').forEach((btn) => {
-      btn.addEventListener('click', () => editarServico(btn.dataset.id));
-    });
-  }
+    if (els.servicesList) {
+      els.servicesList.innerHTML = sorted
+        .map((s, i) => {
+          const saldo = s.valorTotal - s.valorRecebido;
+          const status = saldo > 0 ? 'pendente' : 'quitado';
+          const statusLabel = saldo > 0 ? 'Pendente' : 'Quitado';
+          const dateStr = s.dataPagamentoFinal ? `📅 Pagamento: ${formatDate(s.dataPagamentoFinal)}` : '';
+          return `
+            <div class="service-item ${status}" style="animation-delay: ${i * 0.05}s">
+              <div class="service-item-header">
+                <div>
+                  <div class="service-cliente">${escapeHtml(s.cliente)}</div>
+                  ${s.tipoInstalacao ? `<div class="service-tipo">${escapeHtml(s.tipoInstalacao)}</div>` : ''}
+                </div>
+                <span class="service-status ${status}">${statusLabel}</span>
+              </div>
+              <div class="service-values">
+                <div class="service-val">
+                  <div class="service-val-label">Total</div>
+                  <div class="service-val-amount total">${formatCurrency(s.valorTotal)}</div>
+                </div>
+                <div class="service-val">
+                  <div class="service-val-label">Recebido</div>
+                  <div class="service-val-amount recebido">${formatCurrency(s.valorRecebido)}</div>
+                </div>
+                <div class="service-val">
+                  <div class="service-val-label">Saldo</div>
+                  <div class="service-val-amount saldo">${formatCurrency(Math.max(0, saldo))}</div>
+                </div>
+              </div>
+              ${dateStr ? `<div class="service-date">${dateStr}</div>` : ''}
+              <div class="service-actions">
+                <button class="btn-quitar" data-id="${s.id}" ${status === 'quitado' ? 'disabled' : ''}>${status === 'quitado' ? '✓ Quitado' : '✓ Marcar como Quitado'}</button>
+                <button class="btn-editar" data-id="${s.id}">✏️ Editar</button>
+              </div>
+            </div>`;
+        })
+        .join('');
 
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+      // Bind action buttons
+      els.servicesList.querySelectorAll('.btn-quitar:not([disabled])').forEach((btn) => {
+        btn.addEventListener('click', () => quitarServico(btn.dataset.id));
+      });
+      els.servicesList.querySelectorAll('.btn-editar').forEach((btn) => {
+        btn.addEventListener('click', () => editarServico(btn.dataset.id));
+      });
+    }
   }
 
   async function quitarServico(id) {
@@ -247,7 +425,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const service = services.find((s) => s.id === id);
     if (!service) return;
     service.valorRecebido = service.valorTotal;
-    await updateService(service);
+    await updateService(service.id, service);
     renderServices();
     showToast(`${service.cliente} — Quitado! ✓`);
   }
@@ -265,84 +443,128 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     showScreen('editService');
   }
 
+  // ---- Navigation to Admin Panel ----
+  if (els.btnAdminNav) {
+    els.btnAdminNav.addEventListener('click', () => {
+      showAdminDashboard();
+    });
+  }
+  if (els.btnVoltarAdmin) {
+    els.btnVoltarAdmin.addEventListener('click', () => {
+      showDashboard();
+    });
+  }
+  if (els.btnAdminAddUser) {
+    els.btnAdminAddUser.addEventListener('click', async () => {
+      const email = prompt('Digite o email do novo usuário:');
+      if (!email) return;
+      const role = prompt('Digite o papel/cargo (ex: Técnico, Financeiro):', 'Técnico') || 'Técnico';
+      try {
+        await createUser({
+          id: generateId(),
+          email,
+          role,
+          status: 'Ativo',
+        });
+        showToast('Usuário cadastrado com sucesso!');
+        await renderAdminUsers();
+      } catch (err) {
+        showToast(err.message || 'Erro ao criar usuário');
+      }
+    });
+  }
+
   // ---- New Service ----
-  els.btnNovoServico.addEventListener('click', () => {
-    els.serviceForm.reset();
-    showScreen('newService');
-  });
-  els.btnVoltar.addEventListener('click', () => {
-    showDashboard();
-  });
-  els.serviceForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const cliente = els.campoCliente.value.trim();
-    const tipoInstalacao = els.campoTipo.value.trim();
-    const valorTotal = parseFloat(els.campoValorTotal.value) || 0;
-    const valorRecebido = parseFloat(els.campoValorRecebido.value) || 0;
-    const dataPagamentoFinal = els.campoData.value || '';
-    if (!cliente || valorTotal <= 0) {
-      showToast('Preencha os campos obrigatórios');
-      return;
-    }
-    if (valorRecebido > valorTotal) {
-      showToast('Valor recebido não pode ser maior que o total');
-      return;
-    }
-    const newService = {
-      id: generateId(),
-      cliente,
-      tipoInstalacao,
-      valorTotal,
-      valorRecebido,
-      dataPagamentoFinal,
-    };
-    await addService(newService);
-    showDashboard();
-    showToast('Serviço adicionado com sucesso! ✓');
-  });
+  if (els.btnNovoServico) {
+    els.btnNovoServico.addEventListener('click', () => {
+      els.serviceForm.reset();
+      showScreen('newService');
+    });
+  }
+  if (els.btnVoltar) {
+    els.btnVoltar.addEventListener('click', () => {
+      showDashboard();
+    });
+  }
+  if (els.serviceForm) {
+    els.serviceForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const cliente = els.campoCliente.value.trim();
+      const tipoInstalacao = els.campoTipo.value.trim();
+      const valorTotal = parseFloat(els.campoValorTotal.value) || 0;
+      const valorRecebido = parseFloat(els.campoValorRecebido.value) || 0;
+      const dataPagamentoFinal = els.campoData.value || '';
+      if (!cliente || valorTotal <= 0) {
+        showToast('Preencha os campos obrigatórios');
+        return;
+      }
+      if (valorRecebido > valorTotal) {
+        showToast('Valor recebido não pode ser maior que o total');
+        return;
+      }
+      const newService = {
+        id: generateId(),
+        cliente,
+        tipoInstalacao,
+        valorTotal,
+        valorRecebido,
+        dataPagamentoFinal,
+      };
+      await addService(newService);
+      showDashboard();
+      showToast('Serviço adicionado com sucesso! ✓');
+    });
+  }
 
   // ---- Edit Service ----
-  els.btnVoltarEdit.addEventListener('click', () => {
-    showDashboard();
-  });
-  els.editForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = els.editId.value;
-    const cliente = els.editCliente.value.trim();
-    const tipoInstalacao = els.editTipo.value.trim();
-    const valorTotal = parseFloat(els.editValorTotal.value) || 0;
-    const valorRecebido = parseFloat(els.editValorRecebido.value) || 0;
-    const dataPagamentoFinal = els.editData.value || '';
-    if (!cliente || valorTotal <= 0) {
-      showToast('Preencha os campos obrigatórios');
-      return;
-    }
-    if (valorRecebido > valorTotal) {
-      showToast('Valor recebido não pode ser maior que o total');
-      return;
-    }
-    const services = await getAllServices();
-    const index = services.findIndex((s) => s.id === id);
-    if (index === -1) return;
-    const updated = {
-      ...services[index],
-      cliente,
-      tipoInstalacao,
-      valorTotal,
-      valorRecebido,
-      dataPagamentoFinal,
-    };
-    await updateService(updated);
-    showDashboard();
-    showToast('Serviço atualizado! ✓');
-  });
-  els.btnDeleteService.addEventListener('click', async () => {
-    const id = els.editId.value;
-    if (!confirm('Tem certeza que deseja excluir este serviço?')) return;
-    await deleteService(id);
-    showDashboard();
-    showToast('Serviço excluído');
-  });
+  if (els.btnVoltarEdit) {
+    els.btnVoltarEdit.addEventListener('click', () => {
+      showDashboard();
+    });
+  }
+  if (els.editForm) {
+    els.editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = els.editId.value;
+      const cliente = els.editCliente.value.trim();
+      const tipoInstalacao = els.editTipo.value.trim();
+      const valorTotal = parseFloat(els.editValorTotal.value) || 0;
+      const valorRecebido = parseFloat(els.editValorRecebido.value) || 0;
+      const dataPagamentoFinal = els.editData.value || '';
+      if (!cliente || valorTotal <= 0) {
+        showToast('Preencha os campos obrigatórios');
+        return;
+      }
+      if (valorRecebido > valorTotal) {
+        showToast('Valor recebido não pode ser maior que o total');
+        return;
+      }
+      const services = await getAllServices();
+      const index = services.findIndex((s) => s.id === id);
+      if (index === -1) return;
+      const updated = {
+        ...services[index],
+        cliente,
+        tipoInstalacao,
+        valorTotal,
+        valorRecebido,
+        dataPagamentoFinal,
+      };
+      await updateService(id, updated);
+      showDashboard();
+      showToast('Serviço atualizado! ✓');
+    });
+  }
+
+  if (els.btnDeleteService) {
+    els.btnDeleteService.addEventListener('click', async () => {
+      const id = els.editId.value;
+      if (!confirm('Tem certeza que deseja excluir este serviço?')) return;
+      await deleteService(id);
+      showDashboard();
+      showToast('Serviço excluído');
+    });
+  }
 
   // ---- Service Worker Registration ----
   if ('serviceWorker' in navigator) {
