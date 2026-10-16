@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script>
-    // Unregister legacy Service Workers to prevent stale cache issues
+    // Auto update and clean stale caches from service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for (let registration of registrations) {
@@ -38,10 +38,10 @@
           style="display: block; margin: 0 auto; border-radius: 12px; margin-bottom: 24px;">
       </div>
       <h1 class="login-title" style="display: none;">InstalaSaldo</h1>
-      <p class="login-subtitle" style="margin-bottom: 32px;">Controle de sinal e restante das suas instalações</p>
+      <p class="login-subtitle" style="margin-bottom: 24px;">Controle de sinal e restante das suas instalações</p>
       
       <!-- Mensagem de status / erro no login -->
-      <div id="login-feedback" style="display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; text-align: center;"></div>
+      <div id="login-feedback" style="display: none; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; text-align: center; font-weight: 500;"></div>
 
       <form id="login-form" class="login-form">
         <div class="input-group">
@@ -50,16 +50,56 @@
         </div>
         <div class="input-group">
           <label for="input-senha">Senha</label>
-          <div style="position:relative;">
+          <div style="position:relative; display: flex; align-items: center;">
             <input type="password" id="input-senha" placeholder="Digite sua senha" autocomplete="current-password" required style="width:100%; padding-right:45px;">
-            <button type="button" id="btn-show-senha" onclick="const p=document.getElementById('input-senha'); if(p){const isT=p.type==='text'; p.type=isT?'password':'text'; this.textContent=isT?'👁️':'🙈';}" title="Mostrar senha" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; padding:4px;">👁️</button>
+            <button type="button" id="btn-show-senha" aria-label="Mostrar ou ocultar senha" title="Mostrar senha" 
+              onclick="const p=document.getElementById('input-senha'); if(p){const isT=p.type==='text'; p.type=isT?'password':'text'; this.textContent=isT?'👁️':'🙈';}"
+              style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; padding:6px; line-height: 1;">👁️</button>
           </div>
         </div>
-        <div class="input-group" style="display:flex; justify-content:space-between; align-items:center;">
-          <a href="javascript:void(0)" id="forgot-password" onclick="window.handleForgotPassword && window.handleForgotPassword()" style="font-size: 13px; color: var(--blue-accent); text-decoration: none; cursor: pointer;">Esqueceu a senha?</a>
+        <div class="input-group" style="display:flex; justify-content:space-between; align-items:center; margin-top: 4px;">
+          <a href="javascript:void(0)" id="forgot-password" onclick="window.handleForgotPassword && window.handleForgotPassword()" style="font-size: 13px; color: var(--blue-accent); text-decoration: none; cursor: pointer; font-weight: 500;">Esqueceu a senha?</a>
         </div>
-        <button type="submit" id="btn-entrar" class="btn btn-primary btn-block" style="margin-top: 16px;">
+        <button type="submit" id="btn-entrar" class="btn btn-primary btn-block" style="margin-top: 20px;">
           Entrar
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== TELA REDEFINIR SENHA (PASSWORD RECOVERY) ========== -->
+  <div id="screen-reset-password" class="screen">
+    <div class="login-container">
+      <div class="logo-icon">
+        <img src="icons/logo.png" alt="InstalaSaldo Logo" width="140"
+          style="display: block; margin: 0 auto; border-radius: 12px; margin-bottom: 20px;">
+      </div>
+      <h2 style="font-size: 20px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 8px;">Criar Nova Senha</h2>
+      <p style="font-size: 13px; color: var(--text-secondary); text-align: center; margin-bottom: 20px;">
+        Digite sua nova senha para restaurar o acesso à sua conta.
+      </p>
+
+      <div id="reset-feedback" style="display: none; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; text-align: center; font-weight: 500;"></div>
+
+      <form id="reset-password-form" class="login-form">
+        <div class="input-group">
+          <label for="input-new-password">Nova Senha</label>
+          <div style="position:relative; display: flex; align-items: center;">
+            <input type="password" id="input-new-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required style="width:100%; padding-right:45px;">
+            <button type="button" id="btn-show-reset-senha" aria-label="Mostrar ou ocultar senha" title="Mostrar senha" 
+              onclick="const p=document.getElementById('input-new-password'); if(p){const isT=p.type==='text'; p.type=isT?'password':'text'; this.textContent=isT?'👁️':'🙈';}"
+              style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; padding:6px; line-height: 1;">👁️</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="input-confirm-password">Confirmar Nova Senha</label>
+          <input type="password" id="input-confirm-password" placeholder="Repita a nova senha" autocomplete="new-password" required>
+        </div>
+        <button type="submit" id="btn-salvar-nova-senha" class="btn btn-primary btn-block" style="margin-top: 16px;">
+          Salvar Nova Senha
+        </button>
+        <button type="button" id="btn-voltar-login-reset" class="btn btn-block" style="margin-top: 10px; background: transparent; color: var(--text-secondary); border: 1px solid var(--border);">
+          Voltar ao Login
         </button>
       </form>
     </div>
@@ -74,10 +114,10 @@
           <p class="greeting-name" id="greeting-name">Usuário.</p>
         </div>
         <div class="header-actions">
-          <button class="btn-icon" id="btn-admin-nav" title="Painel Admin" style="display: none;">
+          <button class="btn-icon" id="btn-admin-nav" title="Painel Super Admin" style="display: none; background: rgba(59, 130, 246, 0.15); border: 1px solid var(--blue-accent); font-size: 16px;">
             ⚙️
           </button>
-          <button class="btn-icon" id="btn-logout" title="Sair">
+          <button class="btn-icon" id="btn-logout" title="Sair da Conta">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -326,7 +366,7 @@
     </form>
   </div>
 
-  <!-- ========== TELA ADMIN (SUPER ADMIN DASHBOARD) ========== -->
+  <!-- ========== TELA SUPER ADMIN DASHBOARD COMPLETO ========== -->
   <div id="screen-admin" class="screen">
     <header class="form-header">
       <button class="btn-back" id="btn-voltar-admin">
@@ -338,25 +378,97 @@
       <h2 class="form-title">Painel Super Admin</h2>
       <div style="width:40px"></div>
     </header>
-    <main class="dashboard-body" style="padding: 16px;">
-      <div class="balance-card" style="margin-bottom: 20px;">
-        <div class="balance-header">
-          <span>Controle Geral de Usuários</span>
+
+    <main class="dashboard-body" style="padding: 16px; padding-bottom: 40px;">
+      
+      <!-- Banner Informativo -->
+      <div class="balance-card" style="margin-bottom: 16px; border-left: 4px solid var(--blue-accent);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <h3 style="font-size: 15px; font-weight: 700; color: var(--text);">Controle Master do Sistema</h3>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+              Super Admin: <strong>agenciavallor01@gmail.com</strong>
+            </p>
+          </div>
+          <span style="background: var(--blue-light); color: var(--blue-accent); font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700;">PRODUÇÃO</span>
         </div>
-        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
-          Visualização e gerenciamento de todos os usuários cadastrados e seus papéis no sistema.
-        </p>
       </div>
 
-      <div class="services-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h3 class="section-title" style="margin: 0;">Usuários Cadastrados</h3>
-          <button id="btn-admin-add-user" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;">+ Novo Usuário</button>
+      <!-- Métricas Gerais Obrigatórias -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px;">
+        <div class="small-card">
+          <div class="small-card-header">
+            <span>👥 Total de Usuários</span>
+          </div>
+          <h3 class="small-card-amount" id="stat-total-usuarios">0</h3>
         </div>
-        <div id="admin-users-list" class="services-list">
-          <!-- Rendered by JS -->
+        <div class="small-card">
+          <div class="small-card-header">
+            <span>🏢 Total de Empresas</span>
+          </div>
+          <h3 class="small-card-amount" id="stat-total-empresas">0</h3>
+        </div>
+        <div class="small-card">
+          <div class="small-card-header">
+            <span style="color: var(--green-dark);">🟢 Usuários Ativos</span>
+          </div>
+          <h3 class="small-card-amount" id="stat-usuarios-ativos" style="color: var(--green-dark);">0</h3>
+        </div>
+        <div class="small-card">
+          <div class="small-card-header">
+            <span style="color: var(--danger);">🔴 Bloqueados</span>
+          </div>
+          <h3 class="small-card-amount" id="stat-usuarios-bloqueados" style="color: var(--danger);">0</h3>
         </div>
       </div>
+
+      <!-- Métricas de Planos e Assinaturas -->
+      <div class="small-card" style="margin-bottom: 20px;">
+        <div class="small-card-header">
+          <span>📊 Empresas por Plano & Assinaturas</span>
+        </div>
+        <div style="display: flex; justify-content: space-around; margin-top: 10px; font-size: 12px; text-align: center;">
+          <div>
+            <span style="color: var(--text-muted); display: block;">Básico</span>
+            <strong id="stat-plano-basico" style="font-size: 16px; color: var(--text);">0</strong>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); display: block;">Pro</span>
+            <strong id="stat-plano-pro" style="font-size: 16px; color: var(--blue-accent);">0</strong>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); display: block;">Enterprise</span>
+            <strong id="stat-plano-enterprise" style="font-size: 16px; color: var(--orange-dark);">0</strong>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); display: block;">Assinaturas Ativas</span>
+            <strong id="stat-assinaturas-ativas" style="font-size: 16px; color: var(--green-dark);">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Busca e Filtro de Usuários -->
+      <div class="services-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+          <input type="text" id="admin-search-input" placeholder="🔍 Buscar por nome, email ou empresa..." 
+            style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; background: var(--surface);">
+          <button id="btn-admin-add-user" class="btn btn-primary" style="padding: 10px 14px; font-size: 13px; border-radius: 8px; white-space: nowrap;">+ Novo Usuário</button>
+        </div>
+
+        <!-- Lista de Usuários Gerenciáveis -->
+        <div id="admin-users-list" class="services-list">
+          <!-- Rendered dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- Histórico de Ações Administrativas (Audit Log) -->
+      <div class="services-section" style="margin-top: 24px;">
+        <h3 class="section-title" style="margin-bottom: 10px;">📜 Histórico de Ações Administrativas</h3>
+        <div id="admin-audit-logs" style="background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 12px; max-height: 220px; overflow-y: auto;">
+          <!-- Rendered dynamically by JS -->
+        </div>
+      </div>
+
     </main>
   </div>
 
