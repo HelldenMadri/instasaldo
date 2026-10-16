@@ -544,9 +544,22 @@
           </div>
         </div>
 
-        <div class="input-group">
-          <label for="quote-desc-item">Item / Serviço Principal*</label>
-          <input type="text" id="quote-desc-item" placeholder="Ex: Instalação Ar 12k BTUs" required>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="input-group">
+            <label for="quote-service-type">Tipo de Serviço*</label>
+            <select id="quote-service-type" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+              <option value="Instalação" selected>Instalação</option>
+              <option value="Manutenção">Manutenção</option>
+              <option value="Manutenção Preventiva">Manutenção Preventiva</option>
+              <option value="Reparo / Conserto">Reparo / Conserto</option>
+              <option value="Higienização">Higienização</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="quote-desc-item">Descrição do Serviço*</label>
+            <input type="text" id="quote-desc-item" placeholder="Ex: Ar Split 12k BTUs Daikin" required>
+          </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -699,6 +712,171 @@
         <p><strong>2. Fotos e Assinaturas:</strong> As assinaturas desenhadas e fotos capturadas são armazenadas com segurança e vinculadas à ordem de serviço como evidência de atendimento técnico e entrega de instalações.</p>
         <br>
         <p><strong>3. Responsabilidade Técnica:</strong> A veracidade das notas de execução e a qualidade dos serviços prestados são de inteira responsabilidade do profissional técnico e da empresa executora.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVA ORDEM DE SERVIÇO -->
+  <div id="modal-new-work-order" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Nova Ordem de Serviço</h3>
+        <button type="button" class="btn-close" id="btn-close-new-os-modal">&times;</button>
+      </div>
+      <form id="form-new-work-order" class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+        <div class="input-group">
+          <label for="new-os-customer">Cliente*</label>
+          <select id="new-os-customer" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+            <!-- Opções via JS -->
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="new-os-tipo">Tipo de Serviço*</label>
+          <select id="new-os-tipo" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+            <option value="Instalação" selected>Instalação</option>
+            <option value="Manutenção">Manutenção</option>
+            <option value="Manutenção Preventiva">Manutenção Preventiva</option>
+            <option value="Reparo / Conserto">Reparo / Conserto</option>
+            <option value="Higienização">Higienização</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="new-os-desc">Descrição do Serviço*</label>
+          <textarea id="new-os-desc" rows="2" placeholder="Descreva os detalhes da instalação ou manutenção..." required></textarea>
+        </div>
+
+        <div class="input-group">
+          <label for="new-os-equip">Equipamento / Aparelho</label>
+          <input type="text" id="new-os-equip" placeholder="Ex: Ar Condicionado Split 12.000 BTUs Inverter">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="input-group">
+            <label for="new-os-date">Data Prevista</label>
+            <input type="date" id="new-os-date">
+          </div>
+          <div class="input-group">
+            <label for="new-os-time">Horário</label>
+            <input type="time" id="new-os-time" value="09:00">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="new-os-priority">Prioridade</label>
+          <select id="new-os-priority" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+            <option value="Baixa">Baixa</option>
+            <option value="Média" selected>Média</option>
+            <option value="Alta">Alta</option>
+            <option value="Urgente">Urgente</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 14px;">Criar Ordem de Serviço</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR USUÁRIO / EMPRESA (PAINEL SUPER ADMIN) -->
+  <div id="modal-admin-edit-user" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Ver e Editar Usuário</h3>
+        <button type="button" class="btn-close" id="btn-close-admin-edit-modal">&times;</button>
+      </div>
+      <form id="form-admin-edit-user" class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+        <input type="hidden" id="admin-edit-uid">
+        <div class="input-group">
+          <label for="admin-edit-email">E-mail</label>
+          <input type="email" id="admin-edit-email" readonly style="background: #f1f5f9; cursor: not-allowed;">
+        </div>
+        <div class="input-group">
+          <label for="admin-edit-nome">Nome Completo</label>
+          <input type="text" id="admin-edit-nome" required>
+        </div>
+        <div class="input-group">
+          <label for="admin-edit-empresa">Nome da Empresa</label>
+          <input type="text" id="admin-edit-empresa" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="input-group">
+            <label for="admin-edit-role">Papel (Role)</label>
+            <select id="admin-edit-role" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+              <option value="user">Usuário Comum</option>
+              <option value="admin">Admin da Empresa</option>
+              <option value="gerente">Gerente</option>
+              <option value="instalador">Instalador</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="admin-edit-plano">Plano</label>
+            <select id="admin-edit-plano" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+              <option value="Solo">Solo (R$ 29,90)</option>
+              <option value="Equipe">Equipe (R$ 69,90)</option>
+              <option value="Empresa">Empresa (R$ 129,90)</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="admin-edit-status">Status da Conta</label>
+          <select id="admin-edit-status" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+            <option value="ativo">Ativo</option>
+            <option value="bloqueado">Bloqueado / Suspenso</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 14px;">Salvar Alterações</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EQUIPES & FUNCIONÁRIOS (COM ACESSO MASTER SUPER ADMIN) -->
+  <div id="modal-teams" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet" style="max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Equipes & Funcionários</h3>
+        <button type="button" class="btn-close" id="btn-close-teams-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="teams-super-badge" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-bottom: 14px;">
+          👑 <strong>Acesso Master Super Admin:</strong> Gestão irrestrita liberada para todos os integrantes e planos sem restrições.
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <strong style="font-size: 14px; color: var(--text);">Membros da Equipe</strong>
+          <button type="button" id="btn-open-add-member" class="btn btn-primary btn-sm">+ Novo Membro</button>
+        </div>
+
+        <div id="team-members-list" class="cards-list">
+          <!-- Renderizado dinamicamente -->
+        </div>
+
+        <!-- Formulário inline para convidar novo membro -->
+        <form id="form-new-team-member" style="display: none; margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px;">
+          <h4 style="font-size: 13px; margin-bottom: 10px; color: var(--primary);">Convidar Novo Funcionário</h4>
+          <div class="input-group">
+            <label for="new-member-nome">Nome Completo</label>
+            <input type="text" id="new-member-nome" placeholder="Ex: Roberto Dias" required>
+          </div>
+          <div class="input-group">
+            <label for="new-member-email">E-mail</label>
+            <input type="email" id="new-member-email" placeholder="tecnico@empresa.com" required>
+          </div>
+          <div class="input-group">
+            <label for="new-member-role">Função</label>
+            <select id="new-member-role" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+              <option value="instalador" selected>Instalador (Vê apenas OS atribuídas)</option>
+              <option value="gerente">Gerente (Distribui OS e atende clientes)</option>
+              <option value="admin">Administrador (Controle da empresa)</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button type="button" id="btn-cancel-new-member" class="btn btn-sm" style="flex:1; border: 1px solid var(--border);">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-sm" style="flex:1;">Salvar Membro</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

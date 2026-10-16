@@ -979,6 +979,91 @@ export async function toggleUserStatus(id) {
   return users[idx];
 }
 
+export async function updateAdminUser(id, updates) {
+  const users = await fetchAdminUsers();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1) throw new Error('Usuário não encontrado.');
+
+  if (isSuperAdmin(users[idx].email) && updates.role && updates.role !== 'super_admin') {
+    throw new Error('O papel do Super Admin não pode ser alterado.');
+  }
+
+  users[idx] = { ...users[idx], ...updates };
+  await saveAdminUsers(users);
+
+  try {
+    await supabase.from('profiles').update(updates).eq('id', id);
+  } catch (e) {}
+
+  await recordAuditLog('Edição de Usuário', `Usuário ${users[idx].email} atualizado: ${JSON.stringify(updates)}`);
+  return users[idx];
+}
+
+const LS_TEAM_MEMBERS = 'instalasaldo_team_members_cache';
+
+export async function fetchTeamMembers() {
+  let list = [];
+  try {
+    const { data, error } = await supabase.from('company_members').select('*');
+    if (!error && Array.isArray(data) && data.length > 0) {
+      list = data;
+      safeSetStorage(LS_TEAM_MEMBERS, JSON.stringify(data));
+    }
+  } catch (e) {}
+
+  if (list.length === 0) {
+    const raw = safeGetStorage(LS_TEAM_MEMBERS);
+    list = raw ? JSON.parse(raw) : getInitialTeamMembers();
+  }
+  return list;
+}
+
+export async function addTeamMember(member) {
+  const newM = {
+    id: 'mem-' + Date.now().toString(36),
+    nome: member.nome,
+    email: member.email,
+    role: member.role || 'instalador',
+    status: 'ativo',
+    created_at: new Date().toISOString(),
+  };
+
+  try {
+    await supabase.from('company_members').insert([newM]);
+  } catch (e) {}
+
+  const current = await fetchTeamMembers();
+  safeSetStorage(LS_TEAM_MEMBERS, JSON.stringify([newM, ...current]));
+  await recordAuditLog('Membro Adicionado', `Membro ${newM.email} adicionado como ${newM.role}`);
+  return newM;
+}
+
+function getInitialTeamMembers() {
+  return [
+    {
+      id: 'mem-admin-root',
+      nome: 'Administrador Principal',
+      email: SUPER_ADMIN_EMAIL,
+      role: 'admin',
+      status: 'ativo',
+    },
+    {
+      id: 'mem-gerente-1',
+      nome: 'Fernanda Lima',
+      email: 'fernanda.gerente@gmail.com',
+      role: 'gerente',
+      status: 'ativo',
+    },
+    {
+      id: 'mem-tech-1',
+      nome: 'Carlos Eduardo',
+      email: 'carlos.instalador@gmail.com',
+      role: 'instalador',
+      status: 'ativo',
+    },
+  ];
+}
+
 export async function deleteAdminUser(id) {
   const users = await fetchAdminUsers();
   const target = users.find((u) => u.id === id);

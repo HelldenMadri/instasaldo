@@ -15,6 +15,7 @@ import {
   createQuote,
   convertQuoteToWorkOrder,
   fetchWorkOrders,
+  createWorkOrder,
   startWorkOrder,
   addWorkOrderPhoto,
   addWorkOrderSignature,
@@ -25,9 +26,12 @@ import {
   createService,
   fetchAdminUsers,
   fetchAdminStats,
+  updateAdminUser,
   toggleUserStatus,
   deleteAdminUser,
   fetchAuditLogs,
+  fetchTeamMembers,
+  addTeamMember,
 } from './api.js';
 
 import { formatBRL, toCents, validatePayment } from './money.js';
@@ -789,10 +793,70 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
     );
   });
 
-  // FAB button triggers new OS
+  // Modal: Nova Ordem de Serviço
+  const modalNewOS = document.getElementById('modal-new-work-order');
+  async function openNewWorkOrderModal() {
+    const select = document.getElementById('new-os-customer');
+    if (select) {
+      const customers = await fetchCustomers();
+      if (customers.length === 0) {
+        alert('Cadastre pelo menos um cliente antes de abrir uma Ordem de Serviço.');
+        switchTab('clientes');
+        return;
+      }
+      select.innerHTML = customers.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+    const dateInput = document.getElementById('new-os-date');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    if (modalNewOS) modalNewOS.style.display = 'flex';
+  }
+
+  document.getElementById('btn-nova-os')?.addEventListener('click', openNewWorkOrderModal);
+  document.getElementById('btn-close-new-os-modal')?.addEventListener('click', () => {
+    if (modalNewOS) modalNewOS.style.display = 'none';
+  });
+
+  document.getElementById('form-new-work-order')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const customer_id = document.getElementById('new-os-customer').value;
+    const service_type = document.getElementById('new-os-tipo').value;
+    const desc = document.getElementById('new-os-desc').value.trim();
+    const equip = document.getElementById('new-os-equip').value.trim();
+    const scheduled_date = document.getElementById('new-os-date').value;
+    const scheduled_time = document.getElementById('new-os-time').value;
+    const priority = document.getElementById('new-os-priority').value;
+
+    const customers = await fetchCustomers();
+    const customer = customers.find((c) => c.id === customer_id);
+
+    try {
+      await createWorkOrder({
+        customer_id,
+        customer,
+        service_type,
+        execution_notes: desc,
+        equipment: equip,
+        scheduled_date,
+        scheduled_time,
+        priority,
+      });
+
+      showToast('Ordem de Serviço criada com sucesso!');
+      if (modalNewOS) modalNewOS.style.display = 'none';
+      e.target.reset();
+      switchTab('os');
+      loadWorkOrders();
+      loadFinanceSummary();
+    } catch (err) {
+      alert(err.message || 'Erro ao criar Ordem de Serviço.');
+    }
+  });
+
+  // FAB button triggers new OS modal directly
   navBtns.fabOs?.addEventListener('click', () => {
-    switchTab('os');
-    showToast('Selecione um cliente para criar a Ordem de Serviço.');
+    openNewWorkOrderModal();
   });
 
   // -------------------------------------------------------------
@@ -899,11 +963,18 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
     const customer_id = document.getElementById('quote-select-customer').value;
     const issue_date = document.getElementById('quote-issue-date').value || new Date().toISOString().split('T')[0];
     const valid_until = document.getElementById('quote-valid-until').value;
+    const serviceType = document.getElementById('quote-service-type')?.value || 'Instalação';
     const descItem = document.getElementById('quote-desc-item').value.trim();
     const totalVal = document.getElementById('quote-total-val').value;
     const entryVal = document.getElementById('quote-entry-val').value;
     const terms = document.getElementById('quote-terms').value.trim();
 
+    if (!descItem) {
+      alert('Informe a descrição do serviço para o orçamento.');
+      return;
+    }
+
+    const itemFullDescription = `${serviceType} — ${descItem}`;
     const tCents = toCents(totalVal);
     const eCents = toCents(entryVal);
 
@@ -916,7 +987,7 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
           entry_cents: eCents,
           payment_terms: terms,
         },
-        [{ description: descItem, quantity: 1, unit_price_cents: tCents, total_price_cents: tCents }]
+        [{ description: itemFullDescription, quantity: 1, unit_price_cents: tCents, total_price_cents: tCents }]
       );
 
       showToast(`Orçamento #${created.quote_number} criado com sucesso!`);
@@ -944,8 +1015,87 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
     openNewQuoteModal();
   });
 
-  document.getElementById('menu-btn-teams')?.addEventListener('click', () => {
-    alert('Módulo de Equipes: seu plano atual (Solo) suporta 1 usuário. Acesse "Planos" para gerenciar mais membros.');
+  // Modais de Equipes & Funcionários
+  const modalTeams = document.getElementById('modal-teams');
+  const btnCloseTeamsModal = document.getElementById('btn-close-teams-modal');
+  const teamsSuperBadge = document.getElementById('teams-super-badge');
+  const btnOpenAddMember = document.getElementById('btn-open-add-member');
+  const formNewTeamMember = document.getElementById('form-new-team-member');
+  const btnCancelNewMember = document.getElementById('btn-cancel-new-member');
+
+  async function loadTeamMembersList() {
+    const members = await fetchTeamMembers();
+    const container = document.getElementById('team-members-list');
+    if (!container) return;
+
+    if (members.length === 0) {
+      container.innerHTML = `<div class="empty-state"><p>Nenhum funcionário cadastrado ainda.</p></div>`;
+      return;
+    }
+
+    container.innerHTML = members
+      .map(
+        (m) => `
+        <div class="card-item" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div>
+            <strong style="font-size:14px; color:var(--text);">${m.nome || 'Funcionário'}</strong>
+            <p style="font-size:12px; color:var(--text-secondary);">${m.email}</p>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <span class="badge ${m.role === 'admin' ? 'badge-open' : m.role === 'gerente' ? 'badge-exec' : 'badge-done'}" style="text-transform:capitalize;">${m.role}</span>
+          </div>
+        </div>
+      `
+      )
+      .join('');
+  }
+
+  document.getElementById('menu-btn-teams')?.addEventListener('click', async () => {
+    const userPlan = currentCompany?.plan_id || 'Solo';
+    // Super Admin tem acesso master e irrestrito a todos os recursos em qualquer empresa
+    if (!isSuper && userPlan !== 'Equipe' && userPlan !== 'Empresa' && userPlan !== 'Pro' && userPlan !== 'Enterprise') {
+      alert('Módulo de Equipes: seu plano atual (Solo) suporta 1 usuário. Faça upgrade para o plano Equipe ou Empresa para cadastrar instaladores e gerentes.');
+      return;
+    }
+
+    if (teamsSuperBadge) {
+      teamsSuperBadge.style.display = isSuper ? 'block' : 'none';
+    }
+
+    if (formNewTeamMember) formNewTeamMember.style.display = 'none';
+    if (modalTeams) modalTeams.style.display = 'flex';
+    await loadTeamMembersList();
+  });
+
+  btnCloseTeamsModal?.addEventListener('click', () => {
+    if (modalTeams) modalTeams.style.display = 'none';
+  });
+
+  btnOpenAddMember?.addEventListener('click', () => {
+    if (formNewTeamMember) {
+      formNewTeamMember.style.display = formNewTeamMember.style.display === 'none' ? 'block' : 'none';
+    }
+  });
+
+  btnCancelNewMember?.addEventListener('click', () => {
+    if (formNewTeamMember) formNewTeamMember.style.display = 'none';
+  });
+
+  formNewTeamMember?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById('new-member-nome').value.trim();
+    const email = document.getElementById('new-member-email').value.trim();
+    const role = document.getElementById('new-member-role').value;
+
+    try {
+      await addTeamMember({ nome, email, role });
+      showToast(`Membro ${nome} adicionado com sucesso!`);
+      e.target.reset();
+      if (formNewTeamMember) formNewTeamMember.style.display = 'none';
+      await loadTeamMembersList();
+    } catch (err) {
+      alert(err.message || 'Erro ao adicionar membro da equipe.');
+    }
   });
 
   const modalPlans = document.getElementById('modal-plans');
@@ -964,9 +1114,25 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
     if (modalLegal) modalLegal.style.display = 'none';
   });
 
+  // Suporte ao Cliente — Regra de Planos:
+  // Plano Solo (1º plano): Apenas por e-mail (agenciavallor01@gmail.com)
+  // Plano Equipe/Empresa (a partir do 2º plano) e Super Admin: WhatsApp com atendimento prioritário
   document.getElementById('menu-btn-support')?.addEventListener('click', () => {
-    const waLink = buildWhatsAppLink('11999999999', 'Olá, suporte da Agência Vallor! Gostaria de ajuda com o InstalaSaldo.');
-    window.open(waLink, '_blank');
+    const userPlan = currentCompany?.plan_id || 'Solo';
+    const isPriority = isSuper || userPlan === 'Equipe' || userPlan === 'Empresa' || userPlan === 'Pro' || userPlan === 'Enterprise';
+
+    if (isPriority) {
+      const waMsg = `Olá, suporte prioritário da Agência Vallor! Sou da empresa "${currentCompany?.name || 'Cliente'}" (Plano ${userPlan}) e gostaria de atendimento técnico no InstalaSaldo.`;
+      const waLink = buildWhatsAppLink('11999999999', waMsg);
+      window.open(waLink, '_blank');
+    } else {
+      const subject = encodeURIComponent('Suporte InstalaSaldo — Atendimento Plano Solo');
+      const body = encodeURIComponent(
+        `Olá, equipe de suporte da Agência Vallor!\n\nEmpresa: ${currentCompany?.name || 'Não informada'}\nE-mail da conta: ${currentSession?.user?.email || ''}\nPlano: Solo\n\nDescreva sua solicitação:\n`
+      );
+      showToast('Plano Solo: Redirecionando para suporte via e-mail...');
+      window.location.href = `mailto:agenciavallor01@gmail.com?subject=${subject}&body=${body}`;
+    }
   });
 
   // -------------------------------------------------------------
@@ -1001,11 +1167,57 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
     await loadAdminAuditLogs();
   }
 
+  // Modal: Edição de Usuário no Painel Super Admin
+  const modalAdminEdit = document.getElementById('modal-admin-edit-user');
+  const btnCloseAdminEdit = document.getElementById('btn-close-admin-edit-modal');
+  const formAdminEdit = document.getElementById('form-admin-edit-user');
+
+  btnCloseAdminEdit?.addEventListener('click', () => {
+    if (modalAdminEdit) modalAdminEdit.style.display = 'none';
+  });
+
+  function openEditUserModal(user) {
+    if (!modalAdminEdit || !user) return;
+    document.getElementById('admin-edit-uid').value = user.id;
+    document.getElementById('admin-edit-email').value = user.email || '';
+    document.getElementById('admin-edit-nome').value = user.nome || '';
+    document.getElementById('admin-edit-empresa').value = user.empresa || '';
+    document.getElementById('admin-edit-role').value = user.role || 'user';
+    document.getElementById('admin-edit-plano').value = user.plano || 'Solo';
+    document.getElementById('admin-edit-status').value = user.status || 'ativo';
+
+    modalAdminEdit.style.display = 'flex';
+  }
+
+  formAdminEdit?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const uid = document.getElementById('admin-edit-uid').value;
+    const nome = document.getElementById('admin-edit-nome').value.trim();
+    const empresa = document.getElementById('admin-edit-empresa').value.trim();
+    const role = document.getElementById('admin-edit-role').value;
+    const plano = document.getElementById('admin-edit-plano').value;
+    const status = document.getElementById('admin-edit-status').value;
+
+    try {
+      await updateAdminUser(uid, { nome, empresa, role, plano, status });
+      showToast('Usuário atualizado com sucesso!');
+      if (modalAdminEdit) modalAdminEdit.style.display = 'none';
+      await loadAdminDashboard();
+    } catch (err) {
+      alert(err.message || 'Erro ao salvar alterações do usuário.');
+    }
+  });
+
   async function loadAdminUsersList() {
     const query = document.getElementById('admin-search-input')?.value.trim() || '';
     const users = await fetchAdminUsers(query);
     const container = document.getElementById('admin-users-list');
     if (!container) return;
+
+    if (users.length === 0) {
+      container.innerHTML = `<div class="empty-state"><p>Nenhum usuário encontrado</p></div>`;
+      return;
+    }
 
     container.innerHTML = users
       .map((u) => {
@@ -1013,12 +1225,17 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
         const isActive = u.status === 'ativo' || u.status === 'active';
 
         return `
-        <div class="card-item" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div>
-            <strong style="font-size:14px; color:var(--text);">${u.email}</strong>
-            <p style="font-size:12px; color:var(--text-secondary);">${u.nome || 'Usuário'} | ${u.empresa || 'Empresa'}</p>
+        <div class="card-item card-admin-user" data-uid="${u.id}" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; cursor:pointer;" title="Clique para ver e editar detalhes">
+          <div style="flex:1;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <strong style="font-size:14px; color:var(--text);">${u.email}</strong>
+              <span style="font-size:11px; color:var(--blue-accent); font-weight:600;">(✏️ Editar)</span>
+            </div>
+            <p style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+              ${u.nome || 'Usuário'} | ${u.empresa || 'Empresa'} | <strong>Plano ${u.plano || 'Solo'}</strong>
+            </p>
           </div>
-          <div style="display:flex; gap:6px; align-items:center;">
+          <div style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation();">
             <span class="badge ${isActive ? 'badge-done' : 'badge-exec'}">${u.status}</span>
             ${
               isRoot
@@ -1033,8 +1250,20 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
       })
       .join('');
 
+    // Tornar o card clicável para abrir a edição
+    container.querySelectorAll('.card-admin-user').forEach((card) => {
+      card.addEventListener('click', () => {
+        const uid = card.dataset.uid;
+        const targetUser = users.find((u) => u.id === uid);
+        if (targetUser) {
+          openEditUserModal(targetUser);
+        }
+      });
+    });
+
     container.querySelectorAll('.btn-toggle-status').forEach((b) => {
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', async (e) => {
+        e.stopPropagation();
         try {
           await toggleUserStatus(b.dataset.uid);
           showToast('Status do usuário atualizado.');
