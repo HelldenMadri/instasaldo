@@ -1,5 +1,5 @@
 // src/main.js
-import { getAllServices, addService, updateService, deleteService } from './storage.js';
+import { fetchServices as getAllServices, createService as addService, updateService, deleteService } from './api.js';
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase client (optional, can be used later)
