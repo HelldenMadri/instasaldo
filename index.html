@@ -3,12 +3,12 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#1a2744">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Controle de sinal e restante das suas instalações">
-  <title>InstalaSaldo</title>
+  <meta name="description" content="InstalaSaldo 2.0 — Micro SaaS para Empresas de Instalação e Manutenção">
+  <title>InstalaSaldo — Gestão para Instaladores</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -16,37 +16,33 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <script>
-    // Auto update and clean stale caches from service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (let registration of registrations) {
-          registration.update();
-        }
-      });
-    }
-  </script>
 </head>
 
 <body>
 
-  <!-- ========== TELA LOGIN ========== -->
+  <!-- Alerta de Atualização PWA -->
+  <div id="sw-update-toast" class="update-toast" style="display: none;">
+    <span>⚡ Nova versão do InstalaSaldo disponível!</span>
+    <button type="button" id="btn-update-app" class="btn-sm btn-primary">Atualizar</button>
+  </div>
+
+  <!-- ========== TELA 1: LOGIN ========== -->
   <div id="screen-login" class="screen active">
     <div class="login-container">
       <div class="logo-icon">
         <img src="icons/logo.png" alt="InstalaSaldo Logo" width="160"
-          style="display: block; margin: 0 auto; border-radius: 12px; margin-bottom: 24px;">
+          style="display: block; margin: 0 auto; border-radius: 12px; margin-bottom: 20px;">
       </div>
       <h1 class="login-title" style="display: none;">InstalaSaldo</h1>
-      <p class="login-subtitle" style="margin-bottom: 24px;">Controle de sinal e restante das suas instalações</p>
+      <p class="login-subtitle" style="margin-bottom: 20px;">Gestão de Clientes, OS, Orçamentos e Recebimentos</p>
       
-      <!-- Mensagem de status / erro no login -->
-      <div id="login-feedback" style="display: none; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; text-align: center; font-weight: 500;"></div>
+      <!-- Mensagem visual de feedback -->
+      <div id="login-feedback" class="feedback-msg" style="display: none;"></div>
 
       <form id="login-form" class="login-form">
         <div class="input-group">
-          <label for="input-email">Email</label>
-          <input type="email" id="input-email" placeholder="Digite seu email" autocomplete="email" required>
+          <label for="input-email">E-mail</label>
+          <input type="email" id="input-email" placeholder="seu@email.com" autocomplete="email" required>
         </div>
         <div class="input-group">
           <label for="input-senha">Senha</label>
@@ -57,29 +53,29 @@
               style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:18px; padding:6px; line-height: 1;">👁️</button>
           </div>
         </div>
-        <div class="input-group" style="display:flex; justify-content:space-between; align-items:center; margin-top: 4px;">
-          <a href="javascript:void(0)" id="forgot-password" onclick="window.handleForgotPassword && window.handleForgotPassword()" style="font-size: 13px; color: var(--blue-accent); text-decoration: none; cursor: pointer; font-weight: 500;">Esqueceu a senha?</a>
+        <div class="input-group" style="display:flex; justify-content:flex-end; align-items:center; margin-top: 4px;">
+          <button type="button" id="btn-forgot-password" class="btn-text-link">Esqueceu a senha?</button>
         </div>
-        <button type="submit" id="btn-entrar" class="btn btn-primary btn-block" style="margin-top: 20px;">
-          Entrar
+        <button type="submit" id="btn-entrar" class="btn btn-primary btn-block" style="margin-top: 18px;">
+          Entrar na Conta
         </button>
       </form>
     </div>
   </div>
 
-  <!-- ========== TELA REDEFINIR SENHA (PASSWORD RECOVERY) ========== -->
+  <!-- ========== TELA 2: REDEFINIR SENHA (PASSWORD RECOVERY) ========== -->
   <div id="screen-reset-password" class="screen">
     <div class="login-container">
       <div class="logo-icon">
         <img src="icons/logo.png" alt="InstalaSaldo Logo" width="140"
           style="display: block; margin: 0 auto; border-radius: 12px; margin-bottom: 20px;">
       </div>
-      <h2 style="font-size: 20px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 8px;">Criar Nova Senha</h2>
+      <h2 style="font-size: 20px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 8px;">Definir Nova Senha</h2>
       <p style="font-size: 13px; color: var(--text-secondary); text-align: center; margin-bottom: 20px;">
-        Digite sua nova senha para restaurar o acesso à sua conta.
+        Crie sua nova senha segura para acessar sua conta.
       </p>
 
-      <div id="reset-feedback" style="display: none; padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; text-align: center; font-weight: 500;"></div>
+      <div id="reset-feedback" class="feedback-msg" style="display: none;"></div>
 
       <form id="reset-password-form" class="login-form">
         <div class="input-group">
@@ -96,7 +92,7 @@
           <input type="password" id="input-confirm-password" placeholder="Repita a nova senha" autocomplete="new-password" required>
         </div>
         <button type="submit" id="btn-salvar-nova-senha" class="btn btn-primary btn-block" style="margin-top: 16px;">
-          Salvar Nova Senha
+          Atualizar Senha
         </button>
         <button type="button" id="btn-voltar-login-reset" class="btn btn-block" style="margin-top: 10px; background: transparent; color: var(--text-secondary); border: 1px solid var(--border);">
           Voltar ao Login
@@ -105,13 +101,15 @@
     </div>
   </div>
 
-  <!-- ========== TELA DASHBOARD ========== -->
+  <!-- ========== TELA 3: APLICAÇÃO PRINCIPAL (APP SHELL) ========== -->
   <div id="screen-dashboard" class="screen">
+    
+    <!-- Top Header -->
     <header class="dashboard-header">
       <div class="header-content">
         <div class="header-text">
           <h2 class="greeting" id="greeting-time">Bom dia,</h2>
-          <p class="greeting-name" id="greeting-name">Usuário.</p>
+          <p class="greeting-name" id="greeting-name">Minha Empresa</p>
         </div>
         <div class="header-actions">
           <button class="btn-icon" id="btn-admin-nav" title="Painel Super Admin" style="display: none; background: rgba(59, 130, 246, 0.15); border: 1px solid var(--blue-accent); font-size: 16px;">
@@ -129,249 +127,587 @@
       </div>
     </header>
 
-    <main class="dashboard-body" id="tab-resumo">
-      <!-- Main Balance Card -->
+    <!-- ABA 1: RESUMO FINANCEIRO E ATALHOS (INÍCIO) -->
+    <main class="dashboard-body tab-content" id="tab-inicio">
+      <!-- Card Principal: Resumo de Recebimentos -->
       <div class="balance-card">
         <div class="balance-header">
-          <span>Minha carteira</span>
-          <button class="btn-hide-balance">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </button>
+          <span>Resumo de recebimentos</span>
+          <span style="font-size: 12px; color: var(--blue-light); font-weight: 600;">Valores em Centavos (R$)</span>
         </div>
         <div class="balance-content">
           <h1 class="balance-amount" id="total-recebido">R$ 0,00</h1>
-          <p class="balance-pending">A antecipar: <span id="total-pendente">R$ 0,00</span>*</p>
+          <p class="balance-pending">A receber: <span id="total-pendente" style="font-weight: 700; color: #fff;">R$ 0,00</span></p>
         </div>
         <div class="balance-actions">
-          <button class="balance-action-btn">
-            <div class="action-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="6" width="20" height="12" rx="2" />
-                <circle cx="12" cy="12" r="2" />
-                <path d="M6 12h.01M18 12h.01" />
-              </svg>
-            </div>
-            <span>Sacar</span>
+          <button class="balance-action-btn" disabled style="opacity: 0.6; cursor: not-allowed;" title="Em breve">
+            <div class="action-icon">💳</div>
+            <span>Sacar (Em breve)</span>
           </button>
-          <button class="balance-action-btn">
-            <div class="action-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="6" width="20" height="12" rx="2" />
-                <circle cx="12" cy="12" r="2" />
-                <path d="M12 12h.01M16 12h.01M8 12h.01" />
-              </svg>
-            </div>
-            <span>Antecipar</span>
+          <button class="balance-action-btn" disabled style="opacity: 0.6; cursor: not-allowed;" title="Em breve">
+            <div class="action-icon">⚡</div>
+            <span>Antecipar (Em breve)</span>
           </button>
         </div>
       </div>
 
-      <!-- Secondary Card (Sales today) -->
-      <div class="sales-card">
-        <div class="sales-header">
-          <div class="sales-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="1" x2="12" y2="23" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
+      <!-- Métricas Operacionais Rápidas -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px;">
+        <div class="small-card" id="card-quick-os">
+          <div class="small-card-header">
+            <span>🛠️ OS em Campo</span>
           </div>
-          <span>Vendas hoje</span>
+          <h3 class="small-card-amount" id="metric-os-abertas">0</h3>
         </div>
-        <div class="sales-content">
-          <h2 class="sales-amount">R$ 0,00</h2>
-          <span class="sales-count" id="servicos-pendentes">Vendas: 0</span>
+        <div class="small-card" id="card-quick-maint">
+          <div class="small-card-header">
+            <span>📅 Manutenções 30d</span>
+          </div>
+          <h3 class="small-card-amount" id="metric-maint-30d">0</h3>
         </div>
       </div>
 
-      <!-- Small Cards Row -->
-      <div class="small-cards-row">
-        <div class="small-card">
-          <div class="small-card-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-            </svg>
-            <span>Vendas totais</span>
-          </div>
-          <h3 class="small-card-amount">R$ 0,00</h3>
-        </div>
-        <div class="small-card">
-          <div class="small-card-header">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span>Vendas 30 dias</span>
-          </div>
-          <h3 class="small-card-amount">R$ 0,00</h3>
-        </div>
-      </div>
-    </main>
-
-    <!-- ABA SERVIÇOS (Oculta por padrão) -->
-    <main class="dashboard-body" id="tab-servicos" style="display: none;">
-      <!-- Lista de Serviços -->
+      <!-- Seção: Serviços e Entradas Recentes -->
       <div class="services-section">
-        <h3 class="section-title">Serviços</h3>
-        <div id="services-list" class="services-list">
-          <!-- rendered by JS -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 class="section-title">Últimos Lançamentos</h3>
+          <button type="button" id="btn-novo-lancamento-rapido" class="btn btn-sm btn-primary">+ Novo Serviço</button>
         </div>
-        <div id="empty-state" class="empty-state" style="display:none;">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#c0c6d0" stroke-width="1.2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-          </svg>
-          <p>Nenhum serviço cadastrado</p>
-          <span>Toque no botão abaixo para adicionar</span>
+        <div id="services-list" class="services-list">
+          <!-- Renderizado via JS -->
+        </div>
+        <div id="empty-state-services" class="empty-state" style="display:none;">
+          <p>Nenhum serviço financeiro registrado</p>
+          <span>Toque no botão acima para adicionar</span>
         </div>
       </div>
     </main>
 
-    <!-- BOTTOM NAVIGATION BAR -->
+    <!-- ABA 2: CLIENTES (CARTEIRA ATIVA) -->
+    <main class="dashboard-body tab-content" id="tab-clientes" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px;">
+        <input type="text" id="input-search-customers" placeholder="🔍 Buscar cliente ou telefone..." 
+          style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface);">
+        <button type="button" id="btn-novo-cliente" class="btn btn-primary" style="padding: 10px 14px; white-space: nowrap; font-size: 13px;">+ Cliente</button>
+      </div>
+
+      <!-- Filtro por Status do Cliente -->
+      <div class="filter-pills" style="display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px;">
+        <button class="pill active" data-status="">Todos</button>
+        <button class="pill" data-status="Novo">Novos</button>
+        <button class="pill" data-status="Ativo">Ativos</button>
+        <button class="pill" data-status="Manutenção futura">Manutenção</button>
+        <button class="pill" data-status="Inativo">Inativos</button>
+      </div>
+
+      <div id="customers-list" class="cards-list">
+        <!-- Renderizado dinamicamente -->
+      </div>
+    </main>
+
+    <!-- ABA 3: ORDENS DE SERVIÇO (MÓDULO CENTRAL) -->
+    <main class="dashboard-body tab-content" id="tab-os" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 class="section-title">Ordens de Serviço</h3>
+        <button type="button" id="btn-nova-os" class="btn btn-primary btn-sm">+ Nova OS</button>
+      </div>
+
+      <!-- Filtros de OS -->
+      <div class="filter-pills" style="display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px;">
+        <button class="pill active" data-os-status="">Todas</button>
+        <button class="pill" data-os-status="Aberta">Abertas</button>
+        <button class="pill" data-os-status="Em execução">Em Execução</button>
+        <button class="pill" data-os-status="Concluída">Concluídas</button>
+      </div>
+
+      <div id="work-orders-list" class="cards-list">
+        <!-- Renderizado dinamicamente -->
+      </div>
+    </main>
+
+    <!-- ABA 4: AGENDA & MANUTENÇÃO PREVENTIVA -->
+    <main class="dashboard-body tab-content" id="tab-agenda" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 class="section-title">Previsão de Retorno & Follow-up</h3>
+        <button type="button" id="btn-nova-manutencao" class="btn btn-primary btn-sm">+ Agendar</button>
+      </div>
+
+      <div class="notice-box" style="margin-bottom: 16px; background: #fffbeb; border: 1px solid #fde68a; padding: 10px 14px; border-radius: 8px; font-size: 12px; color: #92400e;">
+        💡 <strong>Dica Comercial:</strong> A data de retorno é estimada pelo instalador. Use o botão WhatsApp para enviar mensagem profissional de agendamento preventivo ao cliente.
+      </div>
+
+      <div id="maintenance-list" class="cards-list">
+        <!-- Renderizado dinamicamente -->
+      </div>
+    </main>
+
+    <!-- ABA 5: MAIS (ORÇAMENTOS, EQUIPES, PLANOS E LEGAL) -->
+    <main class="dashboard-body tab-content" id="tab-mais" style="display: none;">
+      <div class="menu-list" style="display: flex; flex-direction: column; gap: 10px;">
+        
+        <div class="menu-item" id="menu-btn-quotes">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">📄</span>
+            <div>
+              <strong style="font-size: 14px; color: var(--text);">Orçamentos Comerciais</strong>
+              <p style="font-size: 12px; color: var(--text-secondary);">Gerar, enviar via WhatsApp e converter em OS</p>
+            </div>
+          </div>
+          <span>➔</span>
+        </div>
+
+        <div class="menu-item" id="menu-btn-teams">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">👥</span>
+            <div>
+              <strong style="font-size: 14px; color: var(--text);">Equipes & Funcionários</strong>
+              <p style="font-size: 12px; color: var(--text-secondary);">Admins, gerentes e instaladores da empresa</p>
+            </div>
+          </div>
+          <span>➔</span>
+        </div>
+
+        <div class="menu-item" id="menu-btn-plans">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">💎</span>
+            <div>
+              <strong style="font-size: 14px; color: var(--text);">Planos & Assinatura SaaS</strong>
+              <p style="font-size: 12px; color: var(--text-secondary);">Solo (R$ 29,90) | Equipe (R$ 69,90) | Empresa (R$ 129,90)</p>
+            </div>
+          </div>
+          <span>➔</span>
+        </div>
+
+        <div class="menu-item" id="menu-btn-terms">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">⚖️</span>
+            <div>
+              <strong style="font-size: 14px; color: var(--text);">Termos de Uso & Privacidade</strong>
+              <p style="font-size: 12px; color: var(--text-secondary);">Rascunhos legais e política do aplicativo</p>
+            </div>
+          </div>
+          <span>➔</span>
+        </div>
+
+        <div class="menu-item" id="menu-btn-support">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">💬</span>
+            <div>
+              <strong style="font-size: 14px; color: var(--text);">Suporte ao Cliente</strong>
+              <p style="font-size: 12px; color: var(--text-secondary);">Fale com a equipe da Agência Vallor</p>
+            </div>
+          </div>
+          <span>➔</span>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- NAVEGAÇÃO INFERIOR MOBILE-FIRST (BOTTOM NAV) -->
     <nav class="bottom-nav">
-      <button class="nav-item active" id="nav-resumo" style="flex: 1;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7" />
-          <rect x="14" y="3" width="7" height="7" />
-          <rect x="14" y="14" width="7" height="7" />
-          <rect x="3" y="14" width="7" height="7" />
+      <button type="button" class="nav-item active" id="nav-btn-inicio">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
-        <span>Resumo</span>
+        <span>Início</span>
       </button>
-      <button class="nav-fab" id="btn-novo-servico" style="flex: 1;">
+
+      <button type="button" class="nav-item" id="nav-btn-clientes">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span>Clientes</span>
+      </button>
+
+      <button type="button" class="nav-fab" id="nav-btn-fab-os" title="Nova OS">
         <div class="nav-fab-inner">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-            stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </div>
       </button>
-      <button class="nav-item" id="nav-vendas" style="flex: 1;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <path d="M16 10a4 4 0 0 1-8 0" />
+
+      <button type="button" class="nav-item" id="nav-btn-os">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
         </svg>
-        <span>Vendas Total</span>
+        <span>OS</span>
+      </button>
+
+      <button type="button" class="nav-item" id="nav-btn-agenda">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span>Agenda</span>
+      </button>
+
+      <button type="button" class="nav-item" id="nav-btn-mais">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="1"></circle>
+          <circle cx="19" cy="12" r="1"></circle>
+          <circle cx="5" cy="12" r="1"></circle>
+        </svg>
+        <span>Mais</span>
       </button>
     </nav>
   </div>
 
-  <!-- ========== TELA NOVO SERVIÇO ========== -->
-  <div id="screen-new-service" class="screen">
-    <header class="form-header">
-      <button class="btn-back" id="btn-voltar">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <h2 class="form-title">Novo Serviço</h2>
-      <div style="width:40px"></div>
-    </header>
-    <form id="service-form" class="service-form">
-      <div class="input-group">
-        <label for="campo-cliente">Nome do Cliente</label>
-        <input type="text" id="campo-cliente" placeholder="Ex: João Silva" required>
+  <!-- ========== MODAIS E DRAWERS DE AÇÃO ========== -->
+
+  <!-- MODAL: DETALHES E EXECUÇÃO DE OS (COM FOTOS E ASSINATURA) -->
+  <div id="modal-os-execution" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 id="modal-os-title" style="font-size: 16px; font-weight: 700;">Atendimento OS</h3>
+        <button type="button" class="btn-close" id="btn-close-os-modal">&times;</button>
       </div>
-      <div class="input-group">
-        <label for="campo-tipo">Tipo de Instalação</label>
-        <input type="text" id="campo-tipo" placeholder="Ex: Ar-condicionado, Energia Solar...">
+      
+      <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+        <input type="hidden" id="modal-os-id">
+
+        <!-- Abas da OS -->
+        <div class="os-tab-bar" style="display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin-bottom: 14px;">
+          <button type="button" class="os-tab-btn active" data-ostab="details">Dados</button>
+          <button type="button" class="os-tab-btn" data-ostab="exec">Execução</button>
+          <button type="button" class="os-tab-btn" data-ostab="photos">Fotos (<span id="count-os-photos">0</span>)</button>
+          <button type="button" class="os-tab-btn" data-ostab="sig">Assinatura</button>
+        </div>
+
+        <!-- Conteúdo 1: Dados da OS -->
+        <div id="os-subtab-details" class="os-subtab">
+          <p id="os-modal-client-info" style="font-size: 14px; margin-bottom: 8px;"><strong>Cliente:</strong> ...</p>
+          <p id="os-modal-address" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">Endereço: ...</p>
+          
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button type="button" id="btn-os-open-maps" class="btn btn-sm" style="flex:1; border:1px solid var(--border);">🗺️ Abrir no Mapa</button>
+            <button type="button" id="btn-os-open-wa" class="btn btn-sm" style="flex:1; border:1px solid var(--green); color:var(--green-dark);">💬 WhatsApp</button>
+          </div>
+
+          <div id="box-start-service" style="margin-bottom: 16px;">
+            <button type="button" id="btn-iniciar-atendimento" class="btn btn-primary btn-block">
+              ▶️ Iniciar Atendimento
+            </button>
+            <p id="label-atendimento-iniciado" style="display: none; font-size: 12px; color: var(--green-dark); margin-top: 6px; text-align: center; font-weight: 600;">
+              Atendimento iniciado às: <span id="time-started">...</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Conteúdo 2: Execução e Materiais -->
+        <div id="os-subtab-exec" class="os-subtab" style="display: none;">
+          <div class="input-group">
+            <label for="os-input-notes">Descrição do Serviço Realizado (Obrigatório)*</label>
+            <textarea id="os-input-notes" rows="3" placeholder="Ex: Efetuada a instalação da evaporadora e condensadora, vácuo de 500 micras e teste de pressão..."></textarea>
+          </div>
+          <div class="input-group">
+            <label for="os-input-materials">Materiais Utilizados</label>
+            <textarea id="os-input-materials" rows="2" placeholder="Ex: 3m de tubo de cobre 1/4 e 3/8, suporte 450mm, fita PVC..."></textarea>
+          </div>
+        </div>
+
+        <!-- Conteúdo 3: Fotos do Serviço -->
+        <div id="os-subtab-photos" class="os-subtab" style="display: none;">
+          <div style="margin-bottom: 12px;">
+            <label class="btn btn-primary btn-block" style="cursor: pointer; text-align: center;">
+              📷 Tirar / Adicionar Foto do Serviço
+              <input type="file" id="input-camera-photo" accept="image/*" capture="environment" style="display: none;">
+            </label>
+            <p style="font-size: 11px; color: var(--text-secondary); text-align: center; margin-top: 4px;">
+              *Exigida pelo menos 1 foto para conclusão válida no sistema.
+            </p>
+          </div>
+          <div id="os-photos-gallery" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <!-- Fotos renderizadas aqui -->
+          </div>
+        </div>
+
+        <!-- Conteúdo 4: Assinatura do Cliente -->
+        <div id="os-subtab-sig" class="os-subtab" style="display: none;">
+          <div class="input-group">
+            <label for="input-signer-name">Nome Legível do Signatário / Cliente*</label>
+            <input type="text" id="input-signer-name" placeholder="Ex: Roberto Silva">
+          </div>
+          
+          <label style="font-size: 12px; font-weight: 600; color: var(--text); display: block; margin-bottom: 6px;">
+            Assine com o dedo no quadro abaixo:
+          </label>
+          <div style="border: 2px dashed #94a3b8; border-radius: 8px; background: #fff; touch-action: none; position: relative;">
+            <canvas id="signature-canvas" width="340" height="150" style="width: 100%; height: 150px; display: block;"></canvas>
+            <button type="button" id="btn-clear-signature" style="position: absolute; right: 8px; top: 8px; font-size: 11px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; background: #fff;">Limpar</button>
+          </div>
+
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 10px; line-height: 1.4; background: #f8fafc; padding: 8px; border-radius: 6px;">
+            ℹ️ <em>Declaro que os serviços e equipamentos descritos foram vistoriados, testados e entregues em perfeito funcionamento.</em>
+          </div>
+
+          <!-- Opção alternativa: Cliente ausente -->
+          <div style="margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+            <label style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+              <input type="checkbox" id="chk-client-absent">
+              Cliente ausente ou impossibilitado de assinar
+            </label>
+            <div id="box-absent-reason" style="display: none; margin-top: 6px;">
+              <input type="text" id="input-absent-reason" placeholder="Informe a justificativa..." style="font-size: 12px; padding: 6px 10px; width: 100%;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões Finais de Ação -->
+        <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 14px;">
+          <button type="button" id="btn-concluir-os-final" class="btn btn-primary btn-block" style="background: var(--green-dark);">
+            ✅ Concluir Ordem de Serviço
+          </button>
+          <button type="button" id="btn-comprovante-pdf" class="btn btn-block" style="margin-top: 8px; border: 1px solid var(--border); background: #fff;">
+            📄 Gerar Comprovante de Atendimento
+          </button>
+        </div>
+
       </div>
-      <div class="input-group">
-        <label for="campo-valor-total">Valor Total (R$)</label>
-        <input type="number" id="campo-valor-total" placeholder="0,00" min="0" step="0.01" required>
-      </div>
-      <div class="input-group">
-        <label for="campo-valor-recebido">Valor Já Recebido (R$)</label>
-        <input type="number" id="campo-valor-recebido" placeholder="0,00" min="0" step="0.01" required>
-      </div>
-      <div class="input-group">
-        <label for="campo-data">Data Combinada para Pagamento Final</label>
-        <input type="date" id="campo-data">
-      </div>
-      <button type="submit" class="btn btn-primary btn-block btn-save">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-        Salvar Serviço
-      </button>
-    </form>
+    </div>
   </div>
 
-  <!-- ========== TELA EDITAR SERVIÇO ========== -->
-  <div id="screen-edit-service" class="screen">
-    <header class="form-header">
-      <button class="btn-back" id="btn-voltar-edit">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <h2 class="form-title">Editar Serviço</h2>
-      <div style="width:40px"></div>
-    </header>
-    <form id="edit-service-form" class="service-form">
-      <input type="hidden" id="edit-id">
-      <div class="input-group">
-        <label for="edit-cliente">Nome do Cliente</label>
-        <input type="text" id="edit-cliente" required>
+  <!-- MODAL: NOVO / EDITAR CLIENTE -->
+  <div id="modal-customer" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 id="modal-customer-title" style="font-size: 16px; font-weight: 700;">Novo Cliente</h3>
+        <button type="button" class="btn-close" id="btn-close-customer-modal">&times;</button>
       </div>
-      <div class="input-group">
-        <label for="edit-tipo">Tipo de Instalação</label>
-        <input type="text" id="edit-tipo">
-      </div>
-      <div class="input-group">
-        <label for="edit-valor-total">Valor Total (R$)</label>
-        <input type="number" id="edit-valor-total" min="0" step="0.01" required>
-      </div>
-      <div class="input-group">
-        <label for="edit-valor-recebido">Valor Já Recebido (R$)</label>
-        <input type="number" id="edit-valor-recebido" min="0" step="0.01" required>
-      </div>
-      <div class="input-group">
-        <label for="edit-data">Data Combinada para Pagamento Final</label>
-        <input type="date" id="edit-data">
-      </div>
-      <button type="submit" class="btn btn-primary btn-block btn-save">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-        Salvar Alterações
-      </button>
-      <button type="button" class="btn btn-danger btn-block" id="btn-delete-service">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        </svg>
-        Excluir Serviço
-      </button>
-    </form>
+      <form id="form-customer" class="modal-body">
+        <input type="hidden" id="cust-id">
+        <div class="input-group">
+          <label for="cust-name">Nome / Razão Social*</label>
+          <input type="text" id="cust-name" placeholder="Ex: Carlos Oliveira" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="input-group">
+            <label for="cust-phone">Telefone / Celular*</label>
+            <input type="tel" id="cust-phone" placeholder="(11) 99999-9999" required>
+          </div>
+          <div class="input-group">
+            <label for="cust-type">Tipo</label>
+            <select id="cust-type" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+              <option value="PF">Pessoa Física</option>
+              <option value="PJ">Pessoa Jurídica</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="cust-doc">CPF ou CNPJ (Opcional)</label>
+          <input type="text" id="cust-doc" placeholder="000.000.000-00">
+        </div>
+        <div class="input-group">
+          <label for="cust-address">Endereço Completo</label>
+          <input type="text" id="cust-address" placeholder="Rua, Número, Bairro, Cidade">
+        </div>
+        <div class="input-group">
+          <label for="cust-notes">Observações</label>
+          <textarea id="cust-notes" rows="2" placeholder="Ex: Portaria 2, ligar 15min antes..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 14px;">Salvar Cliente</button>
+      </form>
+    </div>
   </div>
 
-  <!-- ========== TELA SUPER ADMIN DASHBOARD COMPLETO ========== -->
+  <!-- MODAL: NOVO ORÇAMENTO -->
+  <div id="modal-quote" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Novo Orçamento Comercial</h3>
+        <button type="button" class="btn-close" id="btn-close-quote-modal">&times;</button>
+      </div>
+      <form id="form-quote" class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+        <div class="input-group">
+          <label for="quote-select-customer">Cliente*</label>
+          <select id="quote-select-customer" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+            <!-- Opções via JS -->
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="input-group">
+            <label for="quote-issue-date">Data de Emissão</label>
+            <input type="date" id="quote-issue-date">
+          </div>
+          <div class="input-group">
+            <label for="quote-valid-until">Validade</label>
+            <input type="date" id="quote-valid-until">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="quote-desc-item">Item / Serviço Principal*</label>
+          <input type="text" id="quote-desc-item" placeholder="Ex: Instalação Ar 12k BTUs" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="input-group">
+            <label for="quote-total-val">Valor Total (R$)*</label>
+            <input type="number" id="quote-total-val" placeholder="0,00" step="0.01" min="0" required>
+          </div>
+          <div class="input-group">
+            <label for="quote-entry-val">Entrada / Sinal (R$)</label>
+            <input type="number" id="quote-entry-val" placeholder="0,00" step="0.01" min="0">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="quote-terms">Condições de Pagamento</label>
+          <input type="text" id="quote-terms" placeholder="Ex: 50% entrada + 50% na conclusão via PIX">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 14px;">Criar Orçamento</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: AGENDAR MANUTENÇÃO PREVENTIVA -->
+  <div id="modal-maintenance" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Agendar Manutenção Preventiva</h3>
+        <button type="button" class="btn-close" id="btn-close-maint-modal">&times;</button>
+      </div>
+      <form id="form-maintenance" class="modal-body">
+        <div class="input-group">
+          <label for="maint-select-customer">Cliente*</label>
+          <select id="maint-select-customer" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%;">
+            <!-- Opções via JS -->
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="maint-equipment">Equipamento / Instalação*</label>
+          <input type="text" id="maint-equipment" placeholder="Ex: Ar Split Daikin 12k Sala" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="input-group">
+            <label for="maint-interval">Intervalo (Meses)</label>
+            <select id="maint-interval" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+              <option value="3">3 Meses</option>
+              <option value="6" selected>6 Meses</option>
+              <option value="12">12 Meses</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="maint-date">Data Estimada de Retorno*</label>
+            <input type="date" id="maint-date" required>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="maint-notes">Observações do Serviço</label>
+          <textarea id="maint-notes" rows="2" placeholder="Ex: Limpeza de serpentina e recarga de fluido"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 14px;">Salvar Agendamento</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO LANÇAMENTO FINANCEIRO -->
+  <div id="modal-new-service" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Novo Lançamento Financeiro</h3>
+        <button type="button" class="btn-close" id="btn-close-service-modal">&times;</button>
+      </div>
+      <form id="form-new-service" class="modal-body">
+        <div class="input-group">
+          <label for="input-svc-cliente">Nome do Cliente*</label>
+          <input type="text" id="input-svc-cliente" placeholder="Ex: Mariana Duarte" required>
+        </div>
+        <div class="input-group">
+          <label for="input-svc-tipo">Tipo de Instalação</label>
+          <input type="text" id="input-svc-tipo" placeholder="Ex: Ar-condicionado, Painel Solar...">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="input-group">
+            <label for="input-svc-total">Valor Total (R$)*</label>
+            <input type="number" id="input-svc-total" placeholder="0,00" step="0.01" min="0" required>
+          </div>
+          <div class="input-group">
+            <label for="input-svc-recebido">Valor Já Recebido (R$)*</label>
+            <input type="number" id="input-svc-recebido" placeholder="0,00" step="0.01" min="0" required>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="input-svc-data">Data Combinada Pagamento</label>
+          <input type="date" id="input-svc-data">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 14px;">Salvar Serviço</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PLANOS & ASSINATURAS SAAS -->
+  <div id="modal-plans" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet" style="max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Planos de Assinatura InstalaSaldo</h3>
+        <button type="button" class="btn-close" id="btn-close-plans-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="plan-card" style="border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: #fff;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 16px; color: var(--text);">Plano Solo</strong>
+            <span style="font-size: 18px; font-weight: 800; color: var(--primary);">R$ 29,90<small style="font-size: 11px; font-weight: normal;">/mês</small></span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 6px 0 10px;">Para o profissional autônomo (1 usuário, orçamentos, clientes, OS e financeiro).</p>
+          <span class="badge" style="background: var(--blue-light); color: var(--blue-accent);">Plano Atual</span>
+        </div>
+
+        <div class="plan-card" style="border: 2px solid var(--blue-accent); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: #f8fafc;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 16px; color: var(--blue-accent);">Plano Equipe</strong>
+            <span style="font-size: 18px; font-weight: 800; color: var(--primary);">R$ 69,90<small style="font-size: 11px; font-weight: normal;">/mês</small></span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 6px 0 10px;">Até 5 usuários, 2 equipes, distribuição de OS, fotos e assinatura em campo.</p>
+          <button type="button" class="btn btn-primary btn-block btn-sm" onclick="alert('Módulo de pagamento em modo demonstração.');">Fazer Upgrade</button>
+        </div>
+
+        <div class="plan-card" style="border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: #fff;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 16px; color: var(--orange-dark);">Plano Empresa</strong>
+            <span style="font-size: 18px; font-weight: 800; color: var(--primary);">R$ 129,90<small style="font-size: 11px; font-weight: normal;">/mês</small></span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); margin: 6px 0 10px;">Até 15 usuários, 5 equipes, gerentes, relatórios avançados e auditoria completa.</p>
+          <button type="button" class="btn btn-block btn-sm" style="border: 1px solid var(--border);" onclick="alert('Módulo de pagamento em modo demonstração.');">Consultar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TERMOS E POLÍTICA -->
+  <div id="modal-legal" class="modal-backdrop" style="display: none;">
+    <div class="modal-sheet" style="max-height: 80vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3 style="font-size: 16px; font-weight: 700;">Termos de Uso & Privacidade</h3>
+        <button type="button" class="btn-close" id="btn-close-legal-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+        <p><strong>Aviso Importante:</strong> Este documento constitui minuta operacional e não substitui a validação jurídica especializada.</p>
+        <br>
+        <p><strong>1. Coleta de Dados:</strong> O InstalaSaldo coleta informações fornecidas diretamente pela empresa usuária exclusivamente para emissão de orçamentos, ordens de serviço e acompanhamento técnico.</p>
+        <br>
+        <p><strong>2. Fotos e Assinaturas:</strong> As assinaturas desenhadas e fotos capturadas são armazenadas com segurança e vinculadas à ordem de serviço como evidência de atendimento técnico e entrega de instalações.</p>
+        <br>
+        <p><strong>3. Responsabilidade Técnica:</strong> A veracidade das notas de execução e a qualidade dos serviços prestados são de inteira responsabilidade do profissional técnico e da empresa executora.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== TELA 4: PAINEL SUPER ADMIN ========== -->
   <div id="screen-admin" class="screen">
     <header class="form-header">
       <button class="btn-back" id="btn-voltar-admin">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
       </button>
@@ -380,102 +716,67 @@
     </header>
 
     <main class="dashboard-body" style="padding: 16px; padding-bottom: 40px;">
-      
-      <!-- Banner Informativo -->
       <div class="balance-card" style="margin-bottom: 16px; border-left: 4px solid var(--blue-accent);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <div>
-            <h3 style="font-size: 15px; font-weight: 700; color: var(--text);">Controle Master do Sistema</h3>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-              Super Admin: <strong>agenciavallor01@gmail.com</strong>
-            </p>
-          </div>
-          <span style="background: var(--blue-light); color: var(--blue-accent); font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700;">PRODUÇÃO</span>
-        </div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--text);">Gestão Central da Plataforma</h3>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+          Super Admin: <strong>agenciavallor01@gmail.com</strong>
+        </p>
       </div>
 
       <!-- Métricas Gerais Obrigatórias -->
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px;">
         <div class="small-card">
-          <div class="small-card-header">
-            <span>👥 Total de Usuários</span>
-          </div>
+          <div class="small-card-header"><span>👥 Usuários</span></div>
           <h3 class="small-card-amount" id="stat-total-usuarios">0</h3>
         </div>
         <div class="small-card">
-          <div class="small-card-header">
-            <span>🏢 Total de Empresas</span>
-          </div>
+          <div class="small-card-header"><span>🏢 Empresas</span></div>
           <h3 class="small-card-amount" id="stat-total-empresas">0</h3>
         </div>
         <div class="small-card">
-          <div class="small-card-header">
-            <span style="color: var(--green-dark);">🟢 Usuários Ativos</span>
-          </div>
+          <div class="small-card-header"><span style="color: var(--green-dark);">🟢 Ativos</span></div>
           <h3 class="small-card-amount" id="stat-usuarios-ativos" style="color: var(--green-dark);">0</h3>
         </div>
         <div class="small-card">
-          <div class="small-card-header">
-            <span style="color: var(--danger);">🔴 Bloqueados</span>
-          </div>
+          <div class="small-card-header"><span style="color: var(--danger);">🔴 Bloqueados</span></div>
           <h3 class="small-card-amount" id="stat-usuarios-bloqueados" style="color: var(--danger);">0</h3>
         </div>
       </div>
 
-      <!-- Métricas de Planos e Assinaturas -->
-      <div class="small-card" style="margin-bottom: 20px;">
-        <div class="small-card-header">
-          <span>📊 Empresas por Plano & Assinaturas</span>
-        </div>
+      <!-- Métricas de Planos -->
+      <div class="small-card" style="margin-bottom: 16px;">
+        <div class="small-card-header"><span>📊 Distribuição de Planos</span></div>
         <div style="display: flex; justify-content: space-around; margin-top: 10px; font-size: 12px; text-align: center;">
-          <div>
-            <span style="color: var(--text-muted); display: block;">Básico</span>
-            <strong id="stat-plano-basico" style="font-size: 16px; color: var(--text);">0</strong>
-          </div>
-          <div>
-            <span style="color: var(--text-muted); display: block;">Pro</span>
-            <strong id="stat-plano-pro" style="font-size: 16px; color: var(--blue-accent);">0</strong>
-          </div>
-          <div>
-            <span style="color: var(--text-muted); display: block;">Enterprise</span>
-            <strong id="stat-plano-enterprise" style="font-size: 16px; color: var(--orange-dark);">0</strong>
-          </div>
-          <div>
-            <span style="color: var(--text-muted); display: block;">Assinaturas Ativas</span>
-            <strong id="stat-assinaturas-ativas" style="font-size: 16px; color: var(--green-dark);">0</strong>
-          </div>
+          <div><span style="color: var(--text-muted);">Solo</span><strong id="stat-plano-basico" style="display:block; font-size: 16px;">0</strong></div>
+          <div><span style="color: var(--text-muted);">Equipe</span><strong id="stat-plano-pro" style="display:block; font-size: 16px; color: var(--blue-accent);">0</strong></div>
+          <div><span style="color: var(--text-muted);">Empresa</span><strong id="stat-plano-enterprise" style="display:block; font-size: 16px; color: var(--orange-dark);">0</strong></div>
         </div>
       </div>
 
-      <!-- Barra de Busca e Filtro de Usuários -->
+      <!-- Busca e Lista de Usuários -->
       <div class="services-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
-          <input type="text" id="admin-search-input" placeholder="🔍 Buscar por nome, email ou empresa..." 
-            style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; background: var(--surface);">
-          <button id="btn-admin-add-user" class="btn btn-primary" style="padding: 10px 14px; font-size: 13px; border-radius: 8px; white-space: nowrap;">+ Novo Usuário</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <input type="text" id="admin-search-input" placeholder="🔍 Buscar usuário ou empresa..." 
+            style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface);">
         </div>
-
-        <!-- Lista de Usuários Gerenciáveis -->
         <div id="admin-users-list" class="services-list">
-          <!-- Rendered dynamically by JS -->
+          <!-- Renderizado via JS -->
         </div>
       </div>
 
-      <!-- Histórico de Ações Administrativas (Audit Log) -->
-      <div class="services-section" style="margin-top: 24px;">
-        <h3 class="section-title" style="margin-bottom: 10px;">📜 Histórico de Ações Administrativas</h3>
+      <!-- Histórico de Auditoria -->
+      <div class="services-section" style="margin-top: 20px;">
+        <h3 class="section-title">📜 Histórico de Auditoria Geral</h3>
         <div id="admin-audit-logs" style="background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 12px; max-height: 220px; overflow-y: auto;">
-          <!-- Rendered dynamically by JS -->
+          <!-- Logs renderizados via JS -->
         </div>
       </div>
-
     </main>
   </div>
 
-  <!-- Toast -->
+  <!-- Toast Notifier -->
   <div id="toast" class="toast"></div>
 
   <script type="module" src="src/main.js"></script>
 </body>
-
 </html>
