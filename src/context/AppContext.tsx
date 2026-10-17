@@ -746,6 +746,9 @@ interface AppContextType {
   teamMembers: TeamMember[];
   invoices: Invoice[];
   isSuperAdmin: boolean;
+  isAuthenticated: boolean;
+  loginWithCredentials: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   activeView: string;
   setActiveView: (view: string) => void;
   isFieldAppView: boolean;
@@ -813,6 +816,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUserId, setCurrentUserId] = useState<string>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_currentUserId`);
     return saved || 'usr-superadmin';
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const saved = localStorage.getItem(`${STORAGE_KEY}_authenticated`);
+    return saved === 'true';
   });
 
   const [companies, setCompanies] = useState<Company[]>(() => {
@@ -1061,22 +1069,155 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  const signOut = async () => {
+  const loginWithCredentials = async (
+    emailInput: string,
+    passwordInput?: string
+  ): Promise<{ success: boolean; error?: string }> => {
     setAuthLoading(true);
+    const cleanEmail = emailInput.trim().toLowerCase();
+
     try {
-      if (isSupabaseConfigured()) {
-        await supabase.auth.signOut();
+      // 1. Tentar Supabase Auth se configurado
+      if (isSupabaseConfigured() && passwordInput) {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password: passwordInput,
+          });
+          if (!error && data.session) {
+            setIsAuthenticated(true);
+            setIsLiveAuth(true);
+            localStorage.setItem(`${STORAGE_KEY}_authenticated`, 'true');
+            await handleSupabaseSession(data.session);
+            return { success: true };
+          }
+        } catch (sbErr) {
+          console.warn('[Supabase Fallback Login]:', sbErr);
+        }
       }
-      setIsLiveAuth(false);
-      setCurrentUserId('usr-rodrigo');
-      setActiveView('inicio');
-      logAudit('LOGOUT', currentUser.email, 'Usuário desconectado da sessão Supabase com sucesso.');
-    } catch (err) {
-      console.error('Erro ao encerrar sessão:', err);
+
+      // 2. Diretório Local de Usuários
+      let targetUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+      // Super Admin Root
+      if (cleanEmail === 'agenciavallor01@gmail.com') {
+        if (!targetUser) {
+          targetUser = INITIAL_USERS[0];
+          setUsers((prev) => [targetUser!, ...prev.filter((u) => u.email.toLowerCase() !== cleanEmail)]);
+        }
+      }
+
+      if (!targetUser) {
+        // Auto-provisionamento de nova empresa se fornecido email válido
+        if (cleanEmail.includes('@')) {
+          const newUserId = `usr-${Date.now()}`;
+          const newCompanyId = `comp-${Date.now()}`;
+          const newCompany: Company = {
+            id: newCompanyId,
+            name: `${cleanEmail.split('@')[0]} Climatização & Serviços`,
+            document: '12.345.678/0001-90',
+            email: cleanEmail,
+            phone: '(11) 98765-4321',
+            plan: 'profissional',
+            planStatus: 'ativo',
+            accountStatus: 'ativo',
+            monthlyPrice: 97,
+            nextBillingDate: '2026-11-17',
+            city: 'São Paulo',
+            state: 'SP',
+            ownerName: cleanEmail.split('@')[0],
+            ownerEmail: cleanEmail,
+            totalOrdersCount: 0,
+            totalVolume: 0,
+            teamMembersCount: 1,
+            lastActivity: 'Agora mesmo',
+            createdAt: new Date().toISOString().split('T')[0],
+            whatsappConfig: {
+              enabled: true,
+              provider: 'manual_fallback',
+              status: 'conectado',
+              deliveryFormat: 'documento_formatado',
+              apiKeyConfigured: false,
+            },
+            features: {
+              whatsappAutomated: true,
+              digitalSignature: true,
+              advancedReports: true,
+              customBranding: false,
+              multiTechnicianDispatch: true,
+            },
+          };
+          targetUser = {
+            id: newUserId,
+            name: cleanEmail.split('@')[0],
+            email: cleanEmail,
+            role: 'empresa_admin',
+            companyId: newCompanyId,
+            companyName: newCompany.name,
+            status: 'ativo',
+            phone: '(11) 98765-4321',
+            createdAt: new Date().toISOString().split('T')[0],
+            lastLogin: 'Agora mesmo',
+            isOwner: false,
+          };
+          setCompanies((prev) => [newCompany, ...prev]);
+          setUsers((prev) => [targetUser!, ...prev]);
+        } else {
+          return {
+            success: false,
+            error: 'Usuário não encontrado. Digite um e-mail válido.',
+          };
+        }
+      }
+
+      if (targetUser.status === 'bloqueado') {
+        return {
+          success: false,
+          error: 'Esta conta está suspensa ou bloqueada. Entre em contato com o suporte.',
+        };
+      }
+
+      setCurrentUserId(targetUser.id);
+      setIsAuthenticated(true);
+      localStorage.setItem(`${STORAGE_KEY}_authenticated`, 'true');
+      localStorage.setItem(`${STORAGE_KEY}_currentUserId`, targetUser.id);
+
+      if (targetUser.email.toLowerCase() === 'agenciavallor01@gmail.com') {
+        setActiveView('superadmin');
+      } else {
+        setActiveView('inicio');
+      }
+
+      logAudit('LOGIN', targetUser.email, `Login realizado com sucesso como ${targetUser.role}`);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Erro ao realizar login.' };
     } finally {
       setAuthLoading(false);
     }
   };
+
+  const logout = async () => {
+    setAuthLoading(true);
+    try {
+      if (isSupabaseConfigured()) {
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+      setIsLiveAuth(false);
+      setIsAuthenticated(false);
+      localStorage.removeItem(`${STORAGE_KEY}_authenticated`);
+      setActiveView('inicio');
+      logAudit('LOGOUT', currentUser?.email || 'anonimo', 'Usuário desconectado com sucesso.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const signOut = logout;
 
   const importLocalStorageData = (): { count: number; message: string } => {
     try {
@@ -1211,9 +1352,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_KEY}_invoices`, JSON.stringify(invoices));
   }, [invoices]);
 
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_KEY}_authenticated`, isAuthenticated ? 'true' : 'false');
+  }, [isAuthenticated]);
+
   const currentUser = users.find((u) => u.id === currentUserId) || users[0];
-  const isSuperAdmin = currentUser.role === 'superadmin' || currentUser.email === 'agenciavallor01@gmail.com' || currentUser.email === 'valloragencia@gmail.com';
+  
+  // STRICT RULE: Super Admin is EXCLUSIVELY and ONLY agenciavallor01@gmail.com
+  const isSuperAdmin = Boolean(
+    currentUser?.email?.toLowerCase().trim() === 'agenciavallor01@gmail.com'
+  );
+  
   const currentCompany = companies.find((c) => c.id === currentUser.companyId) || companies[0];
+
+  // Security Wall: If non-superadmin attempts to open superadmin view, instantly redirect to inicio
+  useEffect(() => {
+    if (activeView === 'superadmin' && !isSuperAdmin) {
+      setActiveView('inicio');
+    }
+  }, [activeView, isSuperAdmin]);
 
   const logAudit = (action: string, target: string, details: string) => {
     const newLog: AuditLog = {
@@ -1756,6 +1913,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         teamMembers,
         invoices,
         isSuperAdmin,
+        isAuthenticated,
+        loginWithCredentials,
+        logout,
         activeView,
         setActiveView,
         isFieldAppView,

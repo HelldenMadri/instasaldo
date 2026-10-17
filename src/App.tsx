@@ -12,17 +12,25 @@ import { PlansView } from './components/PlansView';
 import { TeamView } from './components/TeamView';
 import { AuthModal } from './components/AuthModal';
 
+import { LoginView } from './components/LoginView';
+
 const AppContent: React.FC = () => {
   const {
+    isAuthenticated,
+    isSuperAdmin,
     activeView,
     isFieldAppView,
     setIsFieldAppView,
     currentUser,
-    loginAsRole,
     isAuthModalOpen,
     closeAuthModal,
     importStatus,
   } = useApp();
+
+  // If not logged in, ALWAYS render the Login Screen
+  if (!isAuthenticated) {
+    return <LoginView />;
+  }
 
   // If Mobile Field App simulator view is active, render MobileFieldApp container with simulator controls
   if (isFieldAppView) {
@@ -51,8 +59,8 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // If in Super Admin view, render the dedicated Super Admin layout (Image 7)
-  if (activeView === 'superadmin') {
+  // Super Admin view ONLY rendered if user is strictly the Super Admin
+  if (activeView === 'superadmin' && isSuperAdmin) {
     return (
       <div className="min-h-screen bg-[#f8f9ff]">
         <SuperAdminDashboard />
@@ -83,32 +91,13 @@ const AppContent: React.FC = () => {
             <span>• Micro SaaS para Técnicos e Prestadores de Manutenção</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => loginAsRole('superadmin')}
-              className={`hover:underline font-bold ${
-                currentUser.role === 'superadmin' ? 'text-[#006c49]' : 'text-slate-600'
-              }`}
-            >
-              Super Admin Master
-            </button>
+          <div className="flex items-center gap-3 text-slate-500">
+            <span>Suporte: <strong className="text-slate-800">agenciavallor01@gmail.com</strong></span>
             <span>•</span>
-            <button
-              onClick={() => loginAsRole('empresa_admin')}
-              className={`hover:underline font-bold ${
-                currentUser.role === 'empresa_admin' ? 'text-[#006c49]' : 'text-slate-600'
-              }`}
-            >
-              Administrador (ClimaFrio)
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => loginAsRole('instalador')}
-              className="text-[#04122e] hover:underline font-bold flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-[14px]">smartphone</span>
-              Modo Instalador de Campo
-            </button>
+            <span className="text-emerald-700 font-bold flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+              Sessão Ativa: {currentUser.name}
+            </span>
           </div>
 
           <span className="text-[11px] text-slate-400 font-mono">v2.4.0-core • Brasil</span>

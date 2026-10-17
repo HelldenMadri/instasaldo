@@ -16,6 +16,7 @@ export const Navbar: React.FC = () => {
     isLiveAuth,
     openAuthModal,
     signOut,
+    logout,
     importLocalStorageData,
   } = useApp();
 
@@ -73,23 +74,25 @@ export const Navbar: React.FC = () => {
             </button>
           ))}
 
-          {/* Super Admin Tab */}
-          <button
-            onClick={() => {
-              setActiveView('superadmin');
-              setIsFieldAppView(false);
-            }}
-            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-              activeView === 'superadmin'
-                ? 'bg-[#04122e] text-[#4edea3] shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[17px] text-amber-500">
-              admin_panel_settings
-            </span>
-            <span>Super Admin</span>
-          </button>
+          {/* Super Admin Tab - STRICTLY ONLY for agenciavallor01@gmail.com */}
+          {isSuperAdmin && (
+            <button
+              onClick={() => {
+                setActiveView('superadmin');
+                setIsFieldAppView(false);
+              }}
+              className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                activeView === 'superadmin'
+                  ? 'bg-[#04122e] text-[#4edea3] shadow-sm'
+                  : 'text-amber-800 bg-amber-50 hover:bg-amber-100'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[17px] text-amber-500">
+                admin_panel_settings
+              </span>
+              <span>Super Admin</span>
+            </button>
+          )}
         </nav>
 
         {/* Right: Field App Simulator Toggle & User Menu */}
@@ -147,7 +150,7 @@ export const Navbar: React.FC = () => {
                   {currentUser.name}
                 </span>
                 <span className="text-[10px] text-slate-500 capitalize">
-                  {currentUser.role === 'superadmin' ? 'Super Admin Global' : currentUser.role}
+                  {isSuperAdmin ? 'Super Admin Global' : currentUser.role === 'empresa_admin' ? 'Administrador' : 'Técnico'}
                 </span>
               </div>
               <span className="material-symbols-outlined text-slate-400 text-[18px]">
@@ -164,53 +167,62 @@ export const Navbar: React.FC = () => {
                   </span>
                   <p className="font-bold text-xs text-slate-900 mt-0.5">{currentUser.name}</p>
                   <p className="text-[11px] text-slate-500 truncate">{currentUser.email}</p>
+                  {isSuperAdmin && (
+                    <span className="inline-block mt-1 text-[9px] font-extrabold uppercase bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">
+                      Root Super Admin
+                    </span>
+                  )}
                 </div>
 
-                <div className="p-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-2 py-1">
-                    Alternar Conta Demo (1 Clique)
-                  </span>
-                  {users.slice(0, 4).map((u) => (
+                {/* Only Super Admin can switch accounts */}
+                {isSuperAdmin && (
+                  <div className="p-2 border-b border-slate-100">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-2 py-1">
+                      Alternar Conta (Super Admin)
+                    </span>
+                    {users.slice(0, 4).map((u) => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          switchUser(u.id);
+                          setIsUserMenuOpen(false);
+                        }}
+                        className={`w-full p-2 rounded-lg text-left text-xs flex items-center justify-between transition-colors ${
+                          u.id === currentUser.id
+                            ? 'bg-blue-50 font-bold text-[#04122e]'
+                            : 'hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <span className="block truncate">{u.name}</span>
+                          <span className="text-[10px] text-slate-400 block truncate">
+                            {u.email}
+                          </span>
+                        </div>
+                        {u.id === currentUser.id && (
+                          <span className="material-symbols-outlined text-emerald-600 text-[16px]">
+                            check
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="pt-1 space-y-0.5">
+                  {isSuperAdmin && (
                     <button
-                      key={u.id}
                       onClick={() => {
-                        switchUser(u.id);
+                        setActiveView('superadmin');
+                        setIsFieldAppView(false);
                         setIsUserMenuOpen(false);
                       }}
-                      className={`w-full p-2 rounded-lg text-left text-xs flex items-center justify-between transition-colors ${
-                        u.id === currentUser.id
-                          ? 'bg-blue-50 font-bold text-[#04122e]'
-                          : 'hover:bg-slate-50 text-slate-700'
-                      }`}
+                      className="w-full p-2 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg flex items-center gap-1.5"
                     >
-                      <div className="min-w-0">
-                        <span className="block truncate">{u.name}</span>
-                        <span className="text-[10px] text-slate-400 block truncate">
-                          {u.email} ({u.role})
-                        </span>
-                      </div>
-                      {u.id === currentUser.id && (
-                        <span className="material-symbols-outlined text-emerald-600 text-[16px]">
-                          check
-                        </span>
-                      )}
+                      <span className="material-symbols-outlined text-[16px]">shield</span>
+                      <span>Painel Super Admin Master</span>
                     </button>
-                  ))}
-                </div>
-
-                <div className="border-t border-slate-100 pt-1 space-y-0.5">
-                  <button
-                    onClick={() => {
-                      switchUser('usr-superadmin');
-                      setActiveView('superadmin');
-                      setIsFieldAppView(false);
-                      setIsUserMenuOpen(false);
-                    }}
-                    className="w-full p-2 text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg flex items-center gap-1.5"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">shield</span>
-                    <span>Painel Super Admin Master</span>
-                  </button>
+                  )}
 
                   <button
                     onClick={() => {
@@ -224,29 +236,16 @@ export const Navbar: React.FC = () => {
                     <span>Importar Dados Locais</span>
                   </button>
 
-                  {isLiveAuth ? (
-                    <button
-                      onClick={() => {
-                        signOut();
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full p-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">logout</span>
-                      <span>Sair da Conta (Supabase)</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        openAuthModal();
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full p-2 text-xs font-bold text-[#04122e] hover:bg-blue-50 rounded-lg flex items-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-[16px] text-emerald-600">login</span>
-                      <span>Conectar com Supabase Auth</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="w-full p-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">logout</span>
+                    <span>Sair do Sistema</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -272,19 +271,21 @@ export const Navbar: React.FC = () => {
             {link.label}
           </button>
         ))}
-        <button
-          onClick={() => {
-            setActiveView('superadmin');
-            setIsFieldAppView(false);
-          }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-            activeView === 'superadmin'
-              ? 'bg-[#04122e] text-[#4edea3]'
-              : 'text-amber-800 bg-amber-50'
-          }`}
-        >
-          Super Admin
-        </button>
+        {isSuperAdmin && (
+          <button
+            onClick={() => {
+              setActiveView('superadmin');
+              setIsFieldAppView(false);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              activeView === 'superadmin'
+                ? 'bg-[#04122e] text-[#4edea3]'
+                : 'text-amber-800 bg-amber-50'
+            }`}
+          >
+            Super Admin
+          </button>
+        )}
       </div>
     </header>
   );
