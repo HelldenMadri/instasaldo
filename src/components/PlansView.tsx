@@ -241,6 +241,9 @@ export const PlansView: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
       {/* Suporte Técnico Diferenciado por Plano */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
