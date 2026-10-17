@@ -29,7 +29,7 @@ export const PlansView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-8 w-full">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">

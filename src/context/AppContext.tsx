@@ -91,648 +91,110 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
   },
 };
 
-// Seed Users
+// Demo / Seed ID sets for non-destructive filtering against legacy localStorage
+export const DEMO_COMPANY_IDS = new Set([
+  'comp-climafrio',
+  'comp-castro',
+  'comp-alencar',
+  'comp-lacerda',
+  'comp-amorim',
+  'c0000000-0000-0000-0000-000000000001',
+  'c0000000-0000-0000-0000-000000000002',
+  'c0000000-0000-0000-0000-000000000003',
+  'c0000000-0000-0000-0000-000000000004',
+]);
+
+export const DEMO_USER_IDS = new Set([
+  'usr-rodrigo',
+  'usr-marcos',
+  'usr-fabio',
+  'usr-julio',
+  'usr-tatiane',
+]);
+
+export const DEMO_ENTITY_IDS = new Set([
+  'cli-marcos',
+  'cli-solar',
+  'cli-camila',
+  'cli-boulevard',
+  'cli-paodourado',
+  'srv-1',
+  'srv-2',
+  'srv-3',
+  'srv-4',
+  'os-142',
+  'os-141',
+  'os-140',
+  'bud-1',
+  'tm-1',
+  'tm-2',
+  'tm-3',
+  'inv-101',
+  'inv-100',
+  'inv-099',
+]);
+
+// In-memory neutral fallback when no company exists yet (does NOT simulate a database entity)
+export const DEFAULT_EMPTY_COMPANY: Company = {
+  id: '',
+  name: 'Minha Empresa',
+  document: '',
+  email: '',
+  phone: '',
+  plan: 'essencial',
+  planStatus: 'pendente',
+  accountStatus: 'trial',
+  monthlyPrice: 0,
+  nextBillingDate: '',
+  city: '',
+  state: '',
+  ownerName: '',
+  ownerEmail: '',
+  totalOrdersCount: 0,
+  totalVolume: 0,
+  teamMembersCount: 1,
+  lastActivity: '',
+  createdAt: '',
+  whatsappConfig: {
+    enabled: false,
+    provider: 'manual_fallback',
+    status: 'desconectado',
+    deliveryFormat: 'documento_formatado',
+    apiKeyConfigured: false,
+  },
+  features: {
+    whatsappAutomated: false,
+    digitalSignature: false,
+    advancedReports: false,
+    customBranding: false,
+    multiTechnicianDispatch: false,
+  },
+};
+
+// Root Super Admin Identity (Single platform owner, unbound from client mock companies)
 const INITIAL_USERS: User[] = [
   {
     id: 'usr-superadmin',
     name: 'Super Admin',
     email: 'agenciavallor01@gmail.com',
     role: 'superadmin',
-    companyId: 'comp-climafrio',
-    companyName: 'InstalaSaldo Global',
+    companyId: '',
     status: 'ativo',
-    phone: '(11) 99888-0001',
+    phone: '',
     createdAt: '2023-01-01',
-    lastLogin: 'Hoje às 14:48',
-    connectedDevice: 'MacBook Pro — Chrome 124',
+    lastLogin: 'Agora mesmo',
     isOwner: true,
   },
-  {
-    id: 'usr-rodrigo',
-    name: 'Rodrigo Santana Albuquerque',
-    email: 'rodrigo@climafrio.com.br',
-    role: 'empresa_admin',
-    companyId: 'comp-climafrio',
-    companyName: 'ClimaFrio Soluções Térmicas ME',
-    status: 'ativo',
-    phone: '(11) 98765-4321',
-    createdAt: '2023-03-12',
-    lastLogin: 'Hoje às 14:32',
-    connectedDevice: 'iPhone 14 Pro — iOS 17.4 (PWA App v2.4.0)',
-  },
-  {
-    id: 'usr-marcos',
-    name: 'Marcos Castro Silva',
-    email: 'marcos.solar@castroinstala.com.br',
-    role: 'empresa_admin',
-    companyId: 'comp-castro',
-    companyName: 'Castro Painéis & Energia Solar',
-    status: 'ativo',
-    phone: '(21) 99123-4567',
-    createdAt: '2023-08-18',
-    lastLogin: 'Hoje às 11:20',
-    connectedDevice: 'Samsung Galaxy S24 — Android 14',
-  },
-  {
-    id: 'usr-fabio',
-    name: 'Fabio Alencar',
-    email: 'fabio.eletro@gmail.com',
-    role: 'empresa_admin',
-    companyId: 'comp-alencar',
-    companyName: 'Alencar Instalações Elétricas',
-    status: 'pendente',
-    phone: '(31) 98877-6655',
-    createdAt: '2024-01-04',
-    lastLogin: 'Ontem às 18:15',
-    connectedDevice: 'Motorola Edge — Android 13',
-  },
-  {
-    id: 'usr-julio',
-    name: 'Julio Lacerda',
-    email: 'lacerda.seg@outlook.com',
-    role: 'empresa_admin',
-    companyId: 'comp-lacerda',
-    companyName: 'Lacerda Câmeras e Alarmes ME',
-    status: 'bloqueado',
-    phone: '(41) 97766-5544',
-    createdAt: '2022-11-22',
-    lastLogin: '12/10/2026',
-    connectedDevice: 'Xiaomi Redmi Note 12',
-  },
-  {
-    id: 'usr-tatiane',
-    name: 'Tatiane Amorim',
-    email: 'tati@amorimhidraulica.com.br',
-    role: 'empresa_admin',
-    companyId: 'comp-amorim',
-    companyName: 'Amorim Hidráulica & Gás',
-    status: 'ativo',
-    phone: '(71) 98112-3344',
-    createdAt: '2023-09-15',
-    lastLogin: 'Hoje às 09:40',
-    connectedDevice: 'iPhone 13 — iOS 17.2',
-  },
 ];
 
-// Seed Companies
-const INITIAL_COMPANIES: Company[] = [
-  {
-    id: 'comp-climafrio',
-    name: 'ClimaFrio Soluções Térmicas ME',
-    document: '34.891.204/0001-72',
-    email: 'rodrigo@climafrio.com.br',
-    phone: '(11) 98765-4321',
-    plan: 'profissional',
-    planStatus: 'ativo',
-    accountStatus: 'ativo',
-    monthlyPrice: 97,
-    nextBillingDate: '2026-11-12',
-    address: 'Av. Paulista, 1000, Cj 42',
-    city: 'São Paulo',
-    state: 'SP',
-    ownerName: 'Rodrigo Santana Albuquerque',
-    ownerEmail: 'rodrigo@climafrio.com.br',
-    totalOrdersCount: 142,
-    totalVolume: 184500,
-    teamMembersCount: 4,
-    lastActivity: 'Hoje às 14:32',
-    createdAt: '2023-03-12',
-    whatsappConfig: {
-      enabled: true,
-      provider: 'manual_fallback',
-      status: 'conectado',
-      phoneNumber: '11987654321',
-      apiKeyConfigured: false,
-      deliveryFormat: 'documento_formatado',
-      lastConnectedAt: '2026-10-15',
-    },
-    features: {
-      whatsappAutomated: false,
-      digitalSignature: true,
-      advancedReports: true,
-      customBranding: true,
-      multiTechnicianDispatch: true,
-    },
-  },
-  {
-    id: 'comp-castro',
-    name: 'Castro Painéis & Energia Solar',
-    document: '21.049.551/0001-90',
-    email: 'marcos.solar@castroinstala.com.br',
-    phone: '(21) 99123-4567',
-    plan: 'empresa',
-    planStatus: 'ativo',
-    accountStatus: 'ativo',
-    monthlyPrice: 147,
-    nextBillingDate: '2026-11-18',
-    city: 'Rio de Janeiro',
-    state: 'RJ',
-    ownerName: 'Marcos Castro Silva',
-    ownerEmail: 'marcos.solar@castroinstala.com.br',
-    totalOrdersCount: 215,
-    totalVolume: 320000,
-    teamMembersCount: 8,
-    lastActivity: 'Hoje às 11:20',
-    createdAt: '2023-08-18',
-    whatsappConfig: {
-      enabled: true,
-      provider: 'meta_cloud_api',
-      status: 'conectado',
-      phoneNumber: '21991234567',
-      phoneNumberId: '1098472910398',
-      businessAccountId: 'WABA-992384',
-      apiKeyConfigured: true,
-      deliveryFormat: 'documento_formatado',
-      lastConnectedAt: '2026-10-14',
-      lastTestStatus: 'sucesso',
-      lastTestMessage: 'Mensagem de teste enviada via Cloud API com sucesso.',
-    },
-    features: {
-      whatsappAutomated: true,
-      digitalSignature: true,
-      advancedReports: true,
-      customBranding: true,
-      multiTechnicianDispatch: true,
-    },
-  },
-  {
-    id: 'comp-alencar',
-    name: 'Alencar Instalações Elétricas',
-    document: '219.882.018-09',
-    email: 'fabio.eletro@gmail.com',
-    phone: '(31) 98877-6655',
-    plan: 'essencial',
-    planStatus: 'pendente',
-    accountStatus: 'trial',
-    monthlyPrice: 37,
-    nextBillingDate: '2026-10-25',
-    city: 'Belo Horizonte',
-    state: 'MG',
-    ownerName: 'Fabio Alencar',
-    ownerEmail: 'fabio.eletro@gmail.com',
-    totalOrdersCount: 48,
-    totalVolume: 62400,
-    teamMembersCount: 1,
-    lastActivity: 'Ontem às 18:15',
-    createdAt: '2024-01-04',
-    whatsappConfig: {
-      enabled: false,
-      provider: 'manual_fallback',
-      status: 'desconectado',
-      deliveryFormat: 'documento_formatado',
-      apiKeyConfigured: false,
-    },
-    features: {
-      whatsappAutomated: false,
-      digitalSignature: true,
-      advancedReports: false,
-      customBranding: false,
-      multiTechnicianDispatch: false,
-    },
-  },
-  {
-    id: 'comp-lacerda',
-    name: 'Lacerda Câmeras e Alarmes ME',
-    document: '18.239.112/0001-44',
-    email: 'lacerda.seg@outlook.com',
-    phone: '(41) 97766-5544',
-    plan: 'profissional',
-    planStatus: 'bloqueado',
-    accountStatus: 'suspenso',
-    monthlyPrice: 97,
-    nextBillingDate: '2026-09-22',
-    city: 'Curitiba',
-    state: 'PR',
-    ownerName: 'Julio Lacerda',
-    ownerEmail: 'lacerda.seg@outlook.com',
-    totalOrdersCount: 89,
-    totalVolume: 112000,
-    teamMembersCount: 3,
-    lastActivity: '12/10/2026',
-    createdAt: '2022-11-22',
-    whatsappConfig: {
-      enabled: false,
-      provider: 'manual_fallback',
-      status: 'desconectado',
-      deliveryFormat: 'documento_formatado',
-      apiKeyConfigured: false,
-    },
-    features: {
-      whatsappAutomated: false,
-      digitalSignature: false,
-      advancedReports: false,
-      customBranding: false,
-      multiTechnicianDispatch: false,
-    },
-  },
-  {
-    id: 'comp-amorim',
-    name: 'Amorim Hidráulica & Gás',
-    document: '40.119.820/0001-11',
-    email: 'tati@amorimhidraulica.com.br',
-    phone: '(71) 98112-3344',
-    plan: 'empresa',
-    planStatus: 'ativo',
-    accountStatus: 'ativo',
-    monthlyPrice: 147,
-    nextBillingDate: '2026-11-15',
-    city: 'Salvador',
-    state: 'BA',
-    ownerName: 'Tatiane Amorim',
-    ownerEmail: 'tati@amorimhidraulica.com.br',
-    totalOrdersCount: 167,
-    totalVolume: 245000,
-    teamMembersCount: 6,
-    lastActivity: 'Hoje às 09:40',
-    createdAt: '2023-09-15',
-    whatsappConfig: {
-      enabled: true,
-      provider: 'qr_code_webhook',
-      status: 'conectado',
-      phoneNumber: '71981123344',
-      deliveryFormat: 'pdf_comprovante',
-      apiKeyConfigured: false,
-      lastConnectedAt: '2026-10-12',
-    },
-    features: {
-      whatsappAutomated: true,
-      digitalSignature: true,
-      advancedReports: true,
-      customBranding: true,
-      multiTechnicianDispatch: true,
-    },
-  },
-];
-
-// Seed Clients
-const INITIAL_CLIENTS: Client[] = [
-  {
-    id: 'cli-marcos',
-    companyId: 'comp-climafrio',
-    name: 'Marcos Silveira Rezende',
-    phone: '(11) 98122-3344',
-    whatsapp: '11981223344',
-    email: 'marcos.rezende@gmail.com',
-    document: '321.456.789-01',
-    address: 'Rua das Palmeiras, 450, Apto 82 - Jardins',
-    city: 'São Paulo',
-    state: 'SP',
-    postalCode: '01415-001',
-    notes: 'Cliente prefere atendimento no período da manhã. Acesso pela portaria social.',
-    createdAt: '2026-08-10',
-  },
-  {
-    id: 'cli-solar',
-    companyId: 'comp-climafrio',
-    name: 'Condomínio Solar das Flores',
-    phone: '(11) 3255-8900',
-    whatsapp: '11976543210',
-    email: 'sindico@solardasflores.com.br',
-    document: '12.345.678/0001-99',
-    address: 'Alameda dos Ipês, 1200 - Brooklin',
-    city: 'São Paulo',
-    state: 'SP',
-    postalCode: '04561-002',
-    notes: 'Manutenção periódica nas áreas comuns e salão de festas. Falar com Síndico Alberto.',
-    createdAt: '2026-07-05',
-  },
-  {
-    id: 'cli-camila',
-    companyId: 'comp-climafrio',
-    name: 'Dra. Camila Nogueira',
-    phone: '(11) 99344-5566',
-    whatsapp: '11993445566',
-    email: 'consultorio.camila@clinicavita.com.br',
-    document: '287.654.321-12',
-    address: 'Rua Bela Cintra, 890, Conjunto 112 - Consolação',
-    city: 'São Paulo',
-    state: 'SP',
-    postalCode: '01415-000',
-    notes: 'Consultório odontológico. Serviços somente às sextas após às 18h ou sábados.',
-    createdAt: '2026-09-01',
-  },
-  {
-    id: 'cli-boulevard',
-    companyId: 'comp-climafrio',
-    name: 'Shopping Boulevard Center',
-    phone: '(11) 3344-9988',
-    whatsapp: '11982334455',
-    email: 'engenharia@boulevardcenter.com.br',
-    document: '55.667.889/0001-22',
-    address: 'Av. Ibirapuera, 3100 - Moema',
-    city: 'São Paulo',
-    state: 'SP',
-    postalCode: '04029-200',
-    notes: 'Equipamentos de alta potência. Necessário uso de EPI completo e NR-35.',
-    createdAt: '2026-05-18',
-  },
-  {
-    id: 'cli-paodourado',
-    companyId: 'comp-climafrio',
-    name: 'Padaria Pão Dourado',
-    phone: '(11) 3211-4455',
-    whatsapp: '11971239876',
-    email: 'gerencia@paodourado.com.br',
-    document: '77.889.900/0001-33',
-    address: 'Rua Augusta, 1420 - Consolação',
-    city: 'São Paulo',
-    state: 'SP',
-    postalCode: '01304-001',
-    notes: 'Câmaras frias e balcões refrigerados.',
-    createdAt: '2026-09-20',
-  },
-];
-
-// Seed Services (matching Image 5!)
-const INITIAL_SERVICES: ServiceItem[] = [
-  {
-    id: 'srv-1',
-    companyId: 'comp-climafrio',
-    clientId: 'cli-marcos',
-    clientName: 'Marcos Silveira Rezende',
-    serviceType: 'instalacao',
-    description: 'Instalação de Ar-Condicionado Split 12.000 BTUs Inverter',
-    totalValue: 2800.0,
-    depositValue: 1000.0,
-    pendingBalance: 1800.0,
-    scheduledDate: '2026-10-16',
-    status: 'agendado',
-    assignedTechnicianId: 'usr-rodrigo',
-    assignedTechnicianName: 'Rodrigo Santana',
-    notes: 'Necessário levar escada de 6 degraus e tubulação extra. Cliente prefere pagar o saldo restante de R$ 1.800,00 via Pix.',
-    createdAt: '2026-10-16T10:00:00Z',
-    updatedAt: '2026-10-16T10:00:00Z',
-  },
-  {
-    id: 'srv-2',
-    companyId: 'comp-climafrio',
-    clientId: 'cli-solar',
-    clientName: 'Condomínio Solar das Flores',
-    serviceType: 'manutencao',
-    description: 'Manutenção Preventiva de 6 Splits na academia e portaria',
-    totalValue: 3500.0,
-    depositValue: 1500.0,
-    pendingBalance: 2000.0,
-    scheduledDate: '2026-10-17',
-    status: 'andamento',
-    assignedTechnicianId: 'usr-rodrigo',
-    assignedTechnicianName: 'Rodrigo Santana',
-    notes: 'Limpeza química das serpentinas, medição de pressão do gás e troca dos filtros bactericidas.',
-    createdAt: '2026-10-14T14:30:00Z',
-    updatedAt: '2026-10-15T09:10:00Z',
-  },
-  {
-    id: 'srv-3',
-    companyId: 'comp-climafrio',
-    clientId: 'cli-camila',
-    clientName: 'Dra. Camila Nogueira',
-    serviceType: 'manutencao',
-    description: 'Troca de capacitor e recarga de gás R410a consultório 2',
-    totalValue: 850.0,
-    depositValue: 400.0,
-    pendingBalance: 450.0,
-    scheduledDate: '2026-10-18',
-    status: 'peca',
-    assignedTechnicianId: 'usr-rodrigo',
-    assignedTechnicianName: 'Rodrigo Santana',
-    notes: 'Aguardando entrega do capacitor 35+5uF original para finalizar teste de partida.',
-    createdAt: '2026-10-15T16:00:00Z',
-    updatedAt: '2026-10-16T08:00:00Z',
-  },
-  {
-    id: 'srv-4',
-    companyId: 'comp-climafrio',
-    clientId: 'cli-boulevard',
-    clientName: 'Shopping Boulevard Center',
-    serviceType: 'instalacao',
-    description: 'Instalação de Cassete 4 Vias 36.000 BTUs na Loja 45',
-    totalValue: 5600.0,
-    depositValue: 5600.0,
-    pendingBalance: 0.0,
-    scheduledDate: '2026-10-12',
-    status: 'concluido',
-    assignedTechnicianId: 'usr-rodrigo',
-    assignedTechnicianName: 'Rodrigo Santana',
-    notes: 'Serviço executado com sucesso e teste de estanqueidade em 450 PSI aprovado. Sinal e saldo 100% quitados via Pix.',
-    createdAt: '2026-10-10T11:00:00Z',
-    updatedAt: '2026-10-12T17:30:00Z',
-  },
-];
-
-// Seed Work Orders
-const INITIAL_ORDERS: WorkOrder[] = [
-  {
-    id: 'os-142',
-    code: 'OS-2026-0142',
-    companyId: 'comp-climafrio',
-    clientId: 'cli-marcos',
-    clientName: 'Marcos Silveira Rezende',
-    clientPhone: '(11) 98122-3344',
-    clientAddress: 'Rua das Palmeiras, 450, Apto 82 - Jardins, São Paulo - SP',
-    serviceType: 'instalacao',
-    description: 'Instalação de Ar-Condicionado Split 12.000 BTUs Inverter',
-    status: 'agendado',
-    assignedTechnicianId: 'usr-rodrigo',
-    assignedTechnicianName: 'Rodrigo Santana Albuquerque',
-    totalValue: 2800.0,
-    depositValue: 1000.0,
-    pendingBalance: 1800.0,
-    scheduledDate: '2026-10-16',
-    photos: [],
-    notes: 'Levar mangueira de cobre 3/8, suporte de condensadora de inox e parafusos de ancoragem.',
-    createdAt: '2026-10-16T10:00:00Z',
-  },
-  {
-    id: 'os-141',
-    code: 'OS-2026-0141',
-    companyId: 'comp-climafrio',
-    clientId: 'cli-solar',
-    clientName: 'Condomínio Solar das Flores',
-    clientPhone: '(11) 97654-3210',
-    clientAddress: 'Alameda dos Ipês, 1200 - Brooklin, São Paulo - SP',
-    serviceType: 'manutencao',
-    description: 'Manutenção Preventiva de 6 Splits na academia e portaria',
-    status: 'em_execucao',
-    assignedTechnicianId: 'usr-rodrigo',
-    assignedTechnicianName: 'Rodrigo Santana Albuquerque',
-    totalValue: 3500.0,
-    depositValue: 1500.0,
-    pendingBalance: 2000.0,
-    scheduledDate: '2026-10-17',
-    startDate: '2026-10-16 08:30',
-    photos: [
-      {
-        id: 'p-1',
-        url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
-        caption: 'Condensadora antes da limpeza química',
-        type: 'antes',
-        timestamp: '16/10/2026 09:12',
-      },
-    ],
-    notes: '3 aparelhos já higienizados. Restam os 3 da portaria.',
-    createdAt: '2026-10-14T14:30:00Z',
-  },
-  {
-    id: 'os-140',
-    code: 'OS-2026-0140',
-    companyId: 'comp-climafrio',
-    clientId: 'cli-boulevard',
-    clientName: 'Shopping Boulevard Center',
-    clientPhone: '(11) 98233-4455',
-    clientAddress: 'Av. Ibirapuera, 3100 - Moema, São Paulo - SP',
-    serviceType: 'instalacao',
-    description: 'Instalação de Cassete 4 Vias 36.000 BTUs na Loja 45',
-    status: 'concluido',
-    assignedTechnicianId: 'usr-rodrigo',
-    assignedTechnicianName: 'Rodrigo Santana Albuquerque',
-    totalValue: 5600.0,
-    depositValue: 5600.0,
-    pendingBalance: 0.0,
-    scheduledDate: '2026-10-12',
-    startDate: '2026-10-12 08:00',
-    completedDate: '2026-10-12 17:30',
-    photos: [
-      {
-        id: 'p-2',
-        url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80',
-        caption: 'Tubulação frigorífica instalada e pressurizada',
-        type: 'antes',
-        timestamp: '12/10/2026 10:15',
-      },
-      {
-        id: 'p-3',
-        url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80',
-        caption: 'Cassete em pleno funcionamento com 18°C estável',
-        type: 'depois',
-        timestamp: '12/10/2026 17:00',
-      },
-    ],
-    clientSignatureDate: '12/10/2026 17:28',
-    notes: 'Entregue com termo de garantia de 1 ano de instalação.',
-    createdAt: '2026-10-10T11:00:00Z',
-  },
-];
-
-// Seed Budgets
-const INITIAL_BUDGETS: Budget[] = [
-  {
-    id: 'bud-1',
-    code: 'ORC-2026-088',
-    companyId: 'comp-climafrio',
-    clientId: 'cli-paodourado',
-    clientName: 'Padaria Pão Dourado',
-    title: 'Instalação de 2 Cortinas de Ar 1,50m e Manutenção no Balcão de Frios',
-    serviceType: 'instalacao',
-    items: [
-      {
-        id: 'it-1',
-        description: 'Mão de obra instalação 2 Cortinas de Ar com suporte de fixação',
-        quantity: 2,
-        unitPrice: 600.0,
-        total: 1200.0,
-        type: 'mao_de_obra',
-      },
-      {
-        id: 'it-2',
-        description: 'Carga de fluído refrigerante R134a no compressor do balcão',
-        quantity: 1,
-        unitPrice: 450.0,
-        total: 450.0,
-        type: 'material',
-      },
-      {
-        id: 'it-3',
-        description: 'Substituição de relé térmico e chicote elétrico reforçado',
-        quantity: 1,
-        unitPrice: 280.0,
-        total: 280.0,
-        type: 'material',
-      },
-    ],
-    subtotal: 1930.0,
-    discount: 130.0,
-    totalValue: 1800.0,
-    suggestedDeposit: 900.0,
-    status: 'enviado',
-    validUntil: '2026-10-25',
-    notes: 'Condição: 50% de sinal na aprovação (Pix) e saldo em até 2 dias úteis após término.',
-    createdAt: '2026-10-15',
-  },
-];
-
-// Seed Team Members
-const INITIAL_TEAM: TeamMember[] = [
-  {
-    id: 'tm-1',
-    companyId: 'comp-climafrio',
-    name: 'Rodrigo Santana Albuquerque',
-    email: 'rodrigo@climafrio.com.br',
-    phone: '(11) 98765-4321',
-    role: 'empresa_admin',
-    status: 'ativo',
-    assignedOrdersCount: 8,
-    createdAt: '2023-03-12',
-  },
-  {
-    id: 'tm-2',
-    companyId: 'comp-climafrio',
-    name: 'Lucas Ferreira Lima',
-    email: 'lucas.tecnico@climafrio.com.br',
-    phone: '(11) 97111-2233',
-    role: 'instalador',
-    status: 'ativo',
-    assignedOrdersCount: 5,
-    createdAt: '2024-02-10',
-  },
-  {
-    id: 'tm-3',
-    companyId: 'comp-climafrio',
-    name: 'Carlos Eduardo Mendes',
-    email: 'carlos.mendes@climafrio.com.br',
-    phone: '(11) 96555-4433',
-    role: 'gerente',
-    status: 'ativo',
-    assignedOrdersCount: 2,
-    createdAt: '2023-11-01',
-  },
-];
-
-// Seed Invoices
-const INITIAL_INVOICES: Invoice[] = [
-  {
-    id: 'inv-101',
-    companyId: 'comp-climafrio',
-    companyName: 'ClimaFrio Soluções Térmicas ME',
-    planName: 'Profissional',
-    amount: 97.0,
-    dueDate: '2026-10-12',
-    paidDate: '2026-10-12',
-    status: 'pago',
-    paymentMethod: 'pix',
-  },
-  {
-    id: 'inv-100',
-    companyId: 'comp-climafrio',
-    companyName: 'ClimaFrio Soluções Térmicas ME',
-    planName: 'Profissional',
-    amount: 97.0,
-    dueDate: '2026-09-12',
-    paidDate: '2026-09-12',
-    status: 'pago',
-    paymentMethod: 'pix',
-  },
-  {
-    id: 'inv-099',
-    companyId: 'comp-climafrio',
-    companyName: 'ClimaFrio Soluções Térmicas ME',
-    planName: 'Profissional',
-    amount: 97.0,
-    dueDate: '2026-08-12',
-    paidDate: '2026-08-12',
-    status: 'pago',
-    paymentMethod: 'cartao',
-  },
-];
+// Clean Zero-State Initial Arrays (Ready for real production users)
+const INITIAL_COMPANIES: Company[] = [];
+const INITIAL_CLIENTS: Client[] = [];
+const INITIAL_SERVICES: ServiceItem[] = [];
+const INITIAL_ORDERS: WorkOrder[] = [];
+const INITIAL_BUDGETS: Budget[] = [];
+const INITIAL_TEAM: TeamMember[] = [];
+const INITIAL_INVOICES: Invoice[] = [];
 
 interface AppContextType {
   currentUser: User;
@@ -808,10 +270,17 @@ const AppContext = createContext<AppContextType | null>(null);
 const STORAGE_KEY = 'instalasaldo_saas_data_v2';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Load from localStorage or defaults
+  // Load from localStorage or defaults (filtering out known demo fixtures without altering storage keys)
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_users`);
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    if (saved) {
+      try {
+        const parsed: User[] = JSON.parse(saved);
+        const filtered = parsed.filter((u) => !DEMO_USER_IDS.has(u.id));
+        if (filtered.length > 0) return filtered;
+      } catch {}
+    }
+    return INITIAL_USERS;
   });
 
   const [currentUserId, setCurrentUserId] = useState<string>(() => {
@@ -829,11 +298,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try {
         const parsed: Company[] = JSON.parse(saved);
-        // Ensure accurate subscription pricing (37, 97, 147)
-        return parsed.map((c) => ({
-          ...c,
-          monthlyPrice: PLAN_CONFIGS[c.plan]?.price || c.monthlyPrice,
-        }));
+        const filtered = parsed
+          .filter((c) => !DEMO_COMPANY_IDS.has(c.id))
+          .map((c) => ({
+            ...c,
+            monthlyPrice: PLAN_CONFIGS[c.plan]?.price || c.monthlyPrice,
+          }));
+        return filtered;
       } catch {
         return INITIAL_COMPANIES;
       }
@@ -843,32 +314,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [clients, setClients] = useState<Client[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_clients`);
-    return saved ? JSON.parse(saved) : INITIAL_CLIENTS;
+    if (saved) {
+      try {
+        const parsed: Client[] = JSON.parse(saved);
+        return parsed.filter((c) => !DEMO_ENTITY_IDS.has(c.id) && !DEMO_COMPANY_IDS.has(c.companyId));
+      } catch {}
+    }
+    return INITIAL_CLIENTS;
   });
 
   const [services, setServices] = useState<ServiceItem[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_services`);
-    return saved ? JSON.parse(saved) : INITIAL_SERVICES;
+    if (saved) {
+      try {
+        const parsed: ServiceItem[] = JSON.parse(saved);
+        return parsed.filter((s) => !DEMO_ENTITY_IDS.has(s.id) && !DEMO_COMPANY_IDS.has(s.companyId));
+      } catch {}
+    }
+    return INITIAL_SERVICES;
   });
 
   const [budgets, setBudgets] = useState<Budget[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_budgets`);
-    return saved ? JSON.parse(saved) : INITIAL_BUDGETS;
+    if (saved) {
+      try {
+        const parsed: Budget[] = JSON.parse(saved);
+        return parsed.filter((b) => !DEMO_ENTITY_IDS.has(b.id) && !DEMO_COMPANY_IDS.has(b.companyId));
+      } catch {}
+    }
+    return INITIAL_BUDGETS;
   });
 
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_workOrders`);
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    if (saved) {
+      try {
+        const parsed: WorkOrder[] = JSON.parse(saved);
+        return parsed.filter((o) => !DEMO_ENTITY_IDS.has(o.id) && !DEMO_COMPANY_IDS.has(o.companyId));
+      } catch {}
+    }
+    return INITIAL_ORDERS;
   });
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_teamMembers`);
-    return saved ? JSON.parse(saved) : INITIAL_TEAM;
+    if (saved) {
+      try {
+        const parsed: TeamMember[] = JSON.parse(saved);
+        return parsed.filter((t) => !DEMO_ENTITY_IDS.has(t.id) && !DEMO_COMPANY_IDS.has(t.companyId));
+      } catch {}
+    }
+    return INITIAL_TEAM;
   });
 
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_KEY}_invoices`);
-    return saved ? JSON.parse(saved) : INITIAL_INVOICES;
+    if (saved) {
+      try {
+        const parsed: Invoice[] = JSON.parse(saved);
+        return parsed.filter((inv) => !DEMO_ENTITY_IDS.has(inv.id) && !DEMO_COMPANY_IDS.has(inv.companyId));
+      } catch {}
+    }
+    return INITIAL_INVOICES;
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([
@@ -1012,7 +519,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           supabase.from('work_orders').select('*').eq('company_id', profile.company_id),
         ]);
 
-        if (cliRes.data && cliRes.data.length > 0) {
+        if (!cliRes.error && Array.isArray(cliRes.data)) {
           const mappedClients: Client[] = cliRes.data.map((c: any) => ({
             id: c.id,
             companyId: c.company_id,
@@ -1031,7 +538,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setClients(mappedClients);
         }
 
-        if (ordRes.data && ordRes.data.length > 0) {
+        if (!ordRes.error && Array.isArray(ordRes.data)) {
           const mappedOrders: WorkOrder[] = ordRes.data.map((o: any) => ({
             id: o.id,
             code: o.code,
@@ -1333,18 +840,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (rawClients) {
         try {
           const parsedClients: any[] = JSON.parse(rawClients);
-          const mapped = parsedClients.map((c) => ({
-            id: c.id || 'cli-' + Date.now(),
-            companyId: c.company_id || c.companyId || currentCompany.id,
-            name: c.name || 'Cliente',
-            phone: c.phone || '',
-            whatsapp: c.whatsapp || c.phone || '',
-            email: c.email || '',
-            document: c.document || '',
-            address: c.address || '',
-            notes: c.notes || '',
-            createdAt: c.created_at || c.createdAt || new Date().toISOString().split('T')[0],
-          }));
+          const mapped = parsedClients
+            .filter((c) => !DEMO_ENTITY_IDS.has(c.id) && !DEMO_COMPANY_IDS.has(c.company_id || c.companyId))
+            .map((c) => ({
+              id: c.id || 'cli-' + Date.now(),
+              companyId: c.company_id || c.companyId || currentCompany.id,
+              name: c.name || 'Cliente',
+              phone: c.phone || '',
+              whatsapp: c.whatsapp || c.phone || '',
+              email: c.email || '',
+              document: c.document || '',
+              address: c.address || '',
+              notes: c.notes || '',
+              createdAt: c.created_at || c.createdAt || new Date().toISOString().split('T')[0],
+            }));
           const unique = mapped.filter((pc) => !clients.some((c) => c.id === pc.id));
           if (unique.length > 0) {
             setClients((prev) => [...prev, ...unique]);
@@ -1356,22 +865,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (rawOrders) {
         try {
           const parsedOrders: any[] = JSON.parse(rawOrders);
-          const mapped = parsedOrders.map((o) => ({
-            id: o.id || 'order-' + Date.now(),
-            code: o.code || o.order_number || 'OS-' + Math.floor(100 + Math.random() * 900),
-            companyId: o.company_id || o.companyId || currentCompany.id,
-            clientId: o.client_id || o.clientId || 'cli-01',
-            clientName: o.client_name || o.clientName || 'Cliente',
-            serviceType: o.service_type || o.serviceType || 'instalacao',
-            description: o.description || 'Atendimento técnico',
-            status: o.status || 'aberta',
-            assignedTechnicianId: o.assigned_technician_id || currentUser.id,
-            assignedTechnicianName: o.assigned_technician_name || currentUser.name,
-            totalValue: Number(o.total_value) || Number(o.total_cents) / 100 || 0,
-            depositValue: Number(o.deposit_value) || Number(o.entry_cents) / 100 || 0,
-            pendingBalance: Number(o.pending_balance) || Number(o.balance_cents) / 100 || 0,
-            scheduledDate: o.scheduled_date || o.created_at || new Date().toISOString().split('T')[0],
-          }));
+          const mapped = parsedOrders
+            .filter((o) => !DEMO_ENTITY_IDS.has(o.id) && !DEMO_COMPANY_IDS.has(o.company_id || o.companyId))
+            .map((o) => ({
+              id: o.id || 'order-' + Date.now(),
+              code: o.code || o.order_number || 'OS-' + Math.floor(100 + Math.random() * 900),
+              companyId: o.company_id || o.companyId || currentCompany.id,
+              clientId: o.client_id || o.clientId || 'cli-01',
+              clientName: o.client_name || o.clientName || 'Cliente',
+              serviceType: o.service_type || o.serviceType || 'instalacao',
+              description: o.description || 'Atendimento técnico',
+              status: o.status || 'aberta',
+              assignedTechnicianId: o.assigned_technician_id || currentUser.id,
+              assignedTechnicianName: o.assigned_technician_name || currentUser.name,
+              totalValue: Number(o.total_value) || Number(o.total_cents) / 100 || 0,
+              depositValue: Number(o.deposit_value) || Number(o.entry_cents) / 100 || 0,
+              pendingBalance: Number(o.pending_balance) || Number(o.balance_cents) / 100 || 0,
+              scheduledDate: o.scheduled_date || o.created_at || new Date().toISOString().split('T')[0],
+            }));
           const uniqueOrders = mapped.filter((po) => !workOrders.some((o) => o.id === po.id));
           if (uniqueOrders.length > 0) {
             setWorkOrders((prev) => [...prev, ...uniqueOrders]);
@@ -1383,19 +894,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (rawServices) {
         try {
           const parsed = JSON.parse(rawServices);
-          const mapped = parsed.map((s: any) => ({
-            id: s.id || 'svc-' + Date.now(),
-            companyId: s.company_id || s.companyId || currentCompany.id,
-            clientId: s.client_id || s.clientId || 'cli-01',
-            clientName: s.client_name || s.clientName || 'Cliente',
-            serviceType: s.service_type === 'Manutenção' || s.serviceType === 'manutencao' ? 'manutencao' : 'instalacao',
-            description: s.description || 'Instalação / Manutenção',
-            totalValue: Number(s.total_value) || Number(s.total_cents) / 100 || 0,
-            depositValue: Number(s.deposit_value) || Number(s.entry_cents) / 100 || 0,
-            pendingBalance: Number(s.pending_balance) || Number(s.balance_cents) / 100 || 0,
-            status: s.status || 'concluido',
-            scheduledDate: s.scheduled_date || s.created_at || new Date().toISOString().split('T')[0],
-          }));
+          const mapped = parsed
+            .filter((s: any) => !DEMO_ENTITY_IDS.has(s.id) && !DEMO_COMPANY_IDS.has(s.company_id || s.companyId))
+            .map((s: any) => ({
+              id: s.id || 'svc-' + Date.now(),
+              companyId: s.company_id || s.companyId || currentCompany.id,
+              clientId: s.client_id || s.clientId || 'cli-01',
+              clientName: s.client_name || s.clientName || 'Cliente',
+              serviceType: s.service_type === 'Manutenção' || s.serviceType === 'manutencao' ? 'manutencao' : 'instalacao',
+              description: s.description || 'Instalação / Manutenção',
+              totalValue: Number(s.total_value) || Number(s.total_cents) / 100 || 0,
+              depositValue: Number(s.deposit_value) || Number(s.entry_cents) / 100 || 0,
+              pendingBalance: Number(s.pending_balance) || Number(s.balance_cents) / 100 || 0,
+              status: s.status || 'concluido',
+              scheduledDate: s.scheduled_date || s.created_at || new Date().toISOString().split('T')[0],
+            }));
           const unique = mapped.filter((ms: any) => !services.some((s) => s.id === ms.id));
           if (unique.length > 0) {
             setServices((prev) => [...prev, ...unique]);
@@ -1459,14 +972,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_KEY}_authenticated`, isAuthenticated ? 'true' : 'false');
   }, [isAuthenticated]);
 
-  const currentUser = users.find((u) => u.id === currentUserId) || users[0];
+  const currentUser = users.find((u) => u.id === currentUserId) || users[0] || INITIAL_USERS[0];
   
   // STRICT RULE: Super Admin is EXCLUSIVELY and ONLY agenciavallor01@gmail.com
   const isSuperAdmin = Boolean(
     currentUser?.email?.toLowerCase().trim() === 'agenciavallor01@gmail.com'
   );
   
-  const currentCompany = companies.find((c) => c.id === currentUser.companyId) || companies[0];
+  const currentCompany = companies.find((c) => c.id === currentUser?.companyId) || companies[0] || DEFAULT_EMPTY_COMPANY;
 
   // Security Wall: If non-superadmin attempts to open superadmin view, instantly redirect to inicio
   useEffect(() => {

@@ -90,7 +90,7 @@ export const ClientsView: React.FC = () => {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -130,108 +130,133 @@ export const ClientsView: React.FC = () => {
         </span>
       </div>
 
-      {/* Clients Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredClients.map((client) => {
-          const clientServices = services.filter((s) => s.clientId === client.id);
-          const totalSpent = clientServices.reduce((acc, s) => acc + s.totalValue, 0);
-
-          return (
-            <div
-              key={client.id}
-              className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col justify-between"
+      {/* Clients Cards Grid or Empty State */}
+      {filteredClients.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-[32px]">group_off</span>
+          </div>
+          <h3 className="font-headline font-bold text-base text-slate-800">
+            {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado ainda'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            {searchTerm
+              ? `Não encontramos nenhum cliente correspondente à busca "${searchTerm}".`
+              : 'Cadastre o primeiro cliente da sua empresa para lançar serviços, orçamentos e ordens de serviço.'}
+          </p>
+          {!searchTerm && (
+            <button
+              onClick={openCreateModal}
+              className="mt-2 px-4 py-2 bg-[#04122e] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 hover:bg-[#1a2744] transition-all"
             >
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#04122e] flex items-center justify-center font-bold text-sm shrink-0">
-                      {client.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .slice(0, 2)
-                        .join('')}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-headline font-bold text-sm text-[#04122e] truncate">
-                        {client.name}
-                      </h3>
-                      <span className="text-[11px] text-slate-400 block font-mono">
-                        {formatDocument(client.document)}
-                      </span>
-                    </div>
-                  </div>
+              <span className="material-symbols-outlined text-[16px]">person_add</span>
+              <span>Cadastrar Primeiro Cliente</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredClients.map((client) => {
+            const clientServices = services.filter((s) => s.clientId === client.id);
+            const totalSpent = clientServices.reduce((acc, s) => acc + s.totalValue, 0);
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEditModal(client)}
-                      className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center"
-                      title="Editar"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">edit</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Deseja realmente excluir ${client.name}?`)) {
-                          deleteClient(client.id);
-                        }
-                      }}
-                      className="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 flex items-center justify-center"
-                      title="Excluir"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-slate-400 text-[16px]">call</span>
-                    <span>{formatPhone(client.phone)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-slate-400 text-[16px]">mail</span>
-                    <span className="truncate">{client.email}</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="material-symbols-outlined text-slate-400 text-[16px] shrink-0 mt-0.5">
-                      location_on
-                    </span>
-                    <span className="line-clamp-2">{client.address}</span>
-                  </div>
-                  {client.notes && (
-                    <div className="p-2 bg-slate-50 rounded-lg text-[11px] text-slate-500 italic mt-2">
-                      &quot;{client.notes}&quot;
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Bottom stats and WhatsApp Direct CTA */}
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            return (
+              <div
+                key={client.id}
+                className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col justify-between"
+              >
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Total em Serviços</span>
-                  <span className="font-bold text-xs text-slate-900">
-                    {totalSpent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#04122e] flex items-center justify-center font-bold text-sm shrink-0">
+                        {client.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join('')}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-headline font-bold text-sm text-[#04122e] truncate">
+                          {client.name}
+                        </h3>
+                        <span className="text-[11px] text-slate-400 block font-mono">
+                          {formatDocument(client.document)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEditModal(client)}
+                        className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center"
+                        title="Editar"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Deseja realmente excluir ${client.name}?`)) {
+                            deleteClient(client.id);
+                          }
+                        }}
+                        className="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 flex items-center justify-center"
+                        title="Excluir"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-slate-400 text-[16px]">call</span>
+                      <span>{formatPhone(client.phone)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-slate-400 text-[16px]">mail</span>
+                      <span className="truncate">{client.email}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-slate-400 text-[16px] shrink-0 mt-0.5">
+                        location_on
+                      </span>
+                      <span className="line-clamp-2">{client.address}</span>
+                    </div>
+                    {client.notes && (
+                      <div className="p-2 bg-slate-50 rounded-lg text-[11px] text-slate-500 italic mt-2">
+                        &quot;{client.notes}&quot;
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <a
-                  href={`https://wa.me/55${client.whatsapp.replace(/\D/g, '')}?text=Olá%20${encodeURIComponent(
-                    client.name
-                  )},%20sou%20da%20equipe%20de%20instalação!`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-1.5 bg-[#006c49] hover:bg-[#005236] text-white text-[11px] font-bold rounded-lg flex items-center gap-1.5 shadow-sm transition-all"
-                >
-                  <span className="material-symbols-outlined text-[15px]">chat</span>
-                  <span>WhatsApp</span>
-                </a>
+                {/* Bottom stats and WhatsApp Direct CTA */}
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Total em Serviços</span>
+                    <span className="font-bold text-xs text-slate-900">
+                      {totalSpent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  </div>
+
+                  <a
+                    href={`https://wa.me/55${client.whatsapp.replace(/\D/g, '')}?text=Olá%20${encodeURIComponent(
+                      client.name
+                    )},%20sou%20da%20equipe%20de%20instalação!`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 bg-[#006c49] hover:bg-[#005236] text-white text-[11px] font-bold rounded-lg flex items-center gap-1.5 shadow-sm transition-all"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">chat</span>
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal Criar/Editar Cliente */}
       {isModalOpen && (

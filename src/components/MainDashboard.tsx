@@ -20,7 +20,7 @@ export const MainDashboard: React.FC = () => {
   const upcomingMaintenance = services.filter((s) => s.serviceType === 'manutencao');
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6 w-full">
       {/* Welcome & Context Banner */}
       <div className="bg-[#1a2744] text-white rounded-2xl p-6 shadow-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none"></div>
@@ -35,7 +35,7 @@ export const MainDashboard: React.FC = () => {
             </span>
           </div>
           <h1 className="font-headline text-2xl font-bold text-white">
-            {currentCompany.name}
+            {currentCompany?.name || 'InstalaSaldo'}
           </h1>
           <p className="text-xs text-blue-100">
             Controle de serviços, liquidação de entradas Pix e saldo pendente em campo.

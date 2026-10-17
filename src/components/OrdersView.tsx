@@ -54,7 +54,7 @@ export const OrdersView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -94,9 +94,24 @@ export const OrdersView: React.FC = () => {
         </select>
       </div>
 
-      {/* Work Orders Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {filteredOrders.map((order) => (
+      {/* Work Orders Grid or Empty State */}
+      {filteredOrders.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-[32px]">assignment</span>
+          </div>
+          <h3 className="font-headline font-bold text-base text-slate-800">
+            {searchTerm || statusFilter !== 'all' ? 'Nenhuma Ordem de Serviço encontrada' : 'Nenhuma Ordem de Serviço ativa'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            {searchTerm || statusFilter !== 'all'
+              ? 'Nenhuma OS corresponde aos filtros selecionados. Tente redefinir a busca ou o status.'
+              : 'As Ordens de Serviço (OS) são geradas automaticamente ao aprovar um Orçamento na aba Orçamentos.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {filteredOrders.map((order) => (
           <div
             key={order.id}
             className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col justify-between"
@@ -281,6 +296,7 @@ export const OrdersView: React.FC = () => {
           </div>
         ))}
       </div>
+    )}
 
       {/* Signature Pad Modal */}
       {signingOrder && (

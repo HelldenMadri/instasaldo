@@ -120,10 +120,10 @@ const AppContent: React.FC = () => {
 
   // Standard Web App Dashboard Layout
   return (
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex flex-col font-body">
+    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex flex-col font-body w-full max-w-full overflow-x-hidden">
       <Navbar />
 
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-16 w-full">
         {activeView === 'inicio' && <MainDashboard />}
         {activeView === 'clientes' && <ClientsView />}
         {activeView === 'servicos' && <ServicesView />}
@@ -134,7 +134,7 @@ const AppContent: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 px-4">
+      <footer className="bg-white border-t border-slate-200 py-6 px-4 sm:px-6 w-full">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <span className="font-headline font-bold text-slate-800">InstalaSaldo</span>

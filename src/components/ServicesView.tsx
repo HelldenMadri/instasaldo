@@ -56,6 +56,10 @@ export const ServicesView: React.FC = () => {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (clients.length === 0) {
+      alert('Cadastre um cliente antes de lançar um serviço!');
+      return;
+    }
     if (!description.trim()) {
       alert('A Descrição do Serviço é obrigatória!');
       return;
@@ -104,7 +108,7 @@ export const ServicesView: React.FC = () => {
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -248,11 +252,30 @@ export const ServicesView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
-              {filteredServices.map((service) => {
-                const ratio =
-                  service.totalValue > 0
-                    ? Math.round((service.depositValue / service.totalValue) * 100)
-                    : 0;
+              {filteredServices.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 px-4 text-center">
+                    <div className="max-w-sm mx-auto space-y-2">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                        <span className="material-symbols-outlined text-[26px]">calculate</span>
+                      </div>
+                      <p className="font-bold text-sm text-slate-700">
+                        {searchTerm ? 'Nenhum serviço encontrado para a busca' : 'Nenhum serviço registrado ainda'}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {searchTerm
+                          ? 'Tente ajustar os filtros ou os termos da pesquisa.'
+                          : 'Clique no botão "+ Novo Serviço" acima para lançar sua primeira instalação ou manutenção.'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredServices.map((service) => {
+                  const ratio =
+                    service.totalValue > 0
+                      ? Math.round((service.depositValue / service.totalValue) * 100)
+                      : 0;
 
                 return (
                   <tr key={service.id} className="hover:bg-slate-50/80 transition-colors">
@@ -352,7 +375,7 @@ export const ServicesView: React.FC = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>
@@ -386,11 +409,15 @@ export const ServicesView: React.FC = () => {
                   onChange={(e) => setClientId(e.target.value)}
                   className="w-full h-11 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 outline-none focus:ring-2 focus:ring-[#04122e] font-semibold cursor-pointer"
                 >
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.phone})
-                    </option>
-                  ))}
+                  {clients.length === 0 ? (
+                    <option value="">Nenhum cliente cadastrado (Cadastre um cliente primeiro)</option>
+                  ) : (
+                    clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.phone})
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 

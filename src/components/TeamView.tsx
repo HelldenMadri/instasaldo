@@ -69,7 +69,7 @@ export const TeamView: React.FC = () => {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -78,7 +78,7 @@ export const TeamView: React.FC = () => {
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Gestão de técnicos instaladores, gerentes operacionais e permissões da empresa{' '}
-            <span className="font-bold text-slate-800">{currentCompany.name}</span>.
+            <span className="font-bold text-slate-800">{currentCompany?.name || 'Minha Empresa'}</span>.
           </p>
         </div>
 
@@ -110,96 +110,121 @@ export const TeamView: React.FC = () => {
         </span>
       </div>
 
-      {/* Members Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {filteredMembers.map((member) => (
-          <div
-            key={member.id}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#04122e] text-white flex items-center justify-center font-bold text-sm shrink-0">
-                    {member.name
-                      .split(' ')
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join('')}
-                  </div>
-                  <div>
-                    <h3 className="font-headline font-bold text-sm text-[#04122e]">
-                      {member.name}
-                    </h3>
-                    <span
-                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-                        member.role === 'empresa_admin'
-                          ? 'bg-blue-100 text-blue-900'
-                          : member.role === 'gerente'
-                          ? 'bg-purple-100 text-purple-900'
-                          : 'bg-emerald-100 text-emerald-900'
-                      }`}
-                    >
-                      {member.role === 'empresa_admin'
-                        ? 'Administrador'
-                        : member.role === 'gerente'
-                        ? 'Gerente'
-                        : 'Instalador'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => openEditModal(member)}
-                    className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center"
-                    title="Editar"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">edit</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Deseja remover ${member.name} da equipe?`)) {
-                        deleteTeamMember(member.id);
-                      }
-                    }}
-                    className="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 flex items-center justify-center"
-                    title="Remover"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-slate-400 text-[16px]">mail</span>
-                  <span className="truncate">{member.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-slate-400 text-[16px]">call</span>
-                  <span>{formatPhone(member.phone)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-slate-500">
-                Ordens Atribuídas: <strong className="text-slate-900">{member.assignedOrdersCount}</strong>
-              </span>
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  member.status === 'ativo'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {member.status.toUpperCase()}
-              </span>
-            </div>
+      {/* Members Grid or Empty State */}
+      {filteredMembers.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-sm">
+          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
+            <span className="material-symbols-outlined text-[32px]">group_off</span>
           </div>
-        ))}
-      </div>
+          <h3 className="text-base font-bold text-slate-800 mb-1">
+            {searchTerm ? 'Nenhum membro encontrado' : 'Nenhum membro na equipe ainda'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6">
+            {searchTerm
+              ? `Nenhum membro corresponde à busca "${searchTerm}". Tente outros termos.`
+              : 'Cadastre técnicos instaladores e gestores para delegar ordens de serviço e controlar permissões operacionais.'}
+          </p>
+          {!searchTerm && (
+            <button
+              onClick={openCreateModal}
+              className="px-5 py-2.5 bg-[#04122e] hover:bg-[#1a2744] text-white text-xs font-bold rounded-xl shadow-md inline-flex items-center gap-2 transition-all active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[18px]">person_add</span>
+              <span>Cadastrar Primeiro Membro</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {filteredMembers.map((member) => (
+            <div
+              key={member.id}
+              className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-[#04122e] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                      {member.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')}
+                    </div>
+                    <div>
+                      <h3 className="font-headline font-bold text-sm text-[#04122e]">
+                        {member.name}
+                      </h3>
+                      <span
+                        className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full inline-block mt-0.5 ${
+                          member.role === 'empresa_admin'
+                            ? 'bg-blue-100 text-blue-900'
+                            : member.role === 'gerente'
+                            ? 'bg-purple-100 text-purple-900'
+                            : 'bg-emerald-100 text-emerald-900'
+                        }`}
+                      >
+                        {member.role === 'empresa_admin'
+                          ? 'Administrador'
+                          : member.role === 'gerente'
+                          ? 'Gerente'
+                          : 'Instalador'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEditModal(member)}
+                      className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 flex items-center justify-center"
+                      title="Editar"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Deseja remover ${member.name} da equipe?`)) {
+                          deleteTeamMember(member.id);
+                        }
+                      }}
+                      className="w-8 h-8 rounded-lg hover:bg-red-50 text-red-500 flex items-center justify-center"
+                      title="Remover"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 text-[16px]">mail</span>
+                    <span className="truncate">{member.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-slate-400 text-[16px]">call</span>
+                    <span>{formatPhone(member.phone)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500">
+                  Ordens Atribuídas: <strong className="text-slate-900">{member.assignedOrdersCount}</strong>
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    member.status === 'ativo'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {member.status.toUpperCase()}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal Criar/Editar Membro */}
       {isModalOpen && (

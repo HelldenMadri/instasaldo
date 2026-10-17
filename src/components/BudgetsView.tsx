@@ -84,6 +84,10 @@ export const BudgetsView: React.FC = () => {
 
   const handleSaveBudget = (e: React.FormEvent) => {
     e.preventDefault();
+    if (clients.length === 0) {
+      alert('Cadastre um cliente na aba Clientes antes de criar um orçamento!');
+      return;
+    }
     if (!title.trim()) return;
 
     const selectedClient = clients.find((c) => c.id === clientId) || clients[0];
@@ -114,7 +118,7 @@ export const BudgetsView: React.FC = () => {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="px-4 sm:px-6 py-6 max-w-7xl mx-auto space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -158,9 +162,37 @@ export const BudgetsView: React.FC = () => {
         </span>
       </div>
 
-      {/* Budgets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {filteredBudgets.map((budget) => (
+      {/* Budgets Grid or Empty State */}
+      {filteredBudgets.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300 space-y-3">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-[32px]">request_quote</span>
+          </div>
+          <h3 className="font-headline font-bold text-base text-slate-800">
+            {searchTerm ? 'Nenhum orçamento encontrado' : 'Nenhum orçamento cadastrado ainda'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            {searchTerm
+              ? `Não encontramos nenhum orçamento com o termo "${searchTerm}".`
+              : 'Gere propostas comerciais com discriminação de mão de obra e materiais para enviar aos clientes.'}
+          </p>
+          {!searchTerm && (
+            <button
+              onClick={() => {
+                setClientId(clients[0]?.id || '');
+                setTitle('');
+                setIsModalOpen(true);
+              }}
+              className="mt-2 px-4 py-2 bg-[#04122e] text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 hover:bg-[#1a2744] transition-all"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span>Criar Primeiro Orçamento</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {filteredBudgets.map((budget) => (
           <div
             key={budget.id}
             className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow flex flex-col justify-between"
@@ -276,6 +308,7 @@ export const BudgetsView: React.FC = () => {
           </div>
         ))}
       </div>
+    )}
 
       {/* Modal Criar Orçamento */}
       {isModalOpen && (
@@ -303,11 +336,15 @@ export const BudgetsView: React.FC = () => {
                     onChange={(e) => setClientId(e.target.value)}
                     className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 outline-none"
                   >
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
+                    {clients.length === 0 ? (
+                      <option value="">Nenhum cliente cadastrado (Cadastre um cliente primeiro)</option>
+                    ) : (
+                      clients.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
                 <div>
