@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Logo } from './Logo';
 
 export const LoginView: React.FC = () => {
-  const { loginWithCredentials } = useApp();
+  const { loginWithCredentials, signupWithCredentials } = useApp();
   const [tab, setTab] = useState<'login' | 'signup' | 'forgot'>('login');
   
   // Login State
@@ -45,6 +45,57 @@ export const LoginView: React.FC = () => {
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Erro inesperado ao realizar login.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmitSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!name.trim()) {
+      setErrorMessage('Por favor, informe seu nome completo.');
+      return;
+    }
+    if (!companyName.trim()) {
+      setErrorMessage('Por favor, informe o nome da sua empresa ou negócio.');
+      return;
+    }
+    if (!email.trim()) {
+      setErrorMessage('Por favor, informe seu e-mail profissional.');
+      return;
+    }
+    if (!phone.trim()) {
+      setErrorMessage('Por favor, informe seu WhatsApp com DDD.');
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMessage('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+    if (email.trim().toLowerCase() === 'agenciavallor01@gmail.com') {
+      setErrorMessage('Este e-mail não pode ser usado para criar conta.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await signupWithCredentials({
+        name: name.trim(),
+        companyName: companyName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        password,
+      });
+      if (!result.success) {
+        setErrorMessage(result.error || 'Não foi possível criar a conta. Tente novamente.');
+      } else {
+        setSuccessMessage('Conta criada com sucesso! Aguarde, redirecionando...');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Erro inesperado ao criar conta.');
     } finally {
       setIsLoading(false);
     }
@@ -215,7 +266,7 @@ export const LoginView: React.FC = () => {
           )}
 
           {tab === 'signup' && (
-            <form onSubmit={handleSubmitLogin} className="space-y-3.5">
+            <form onSubmit={handleSubmitSignup} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Seu Nome Completo

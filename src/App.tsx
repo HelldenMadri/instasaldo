@@ -22,6 +22,7 @@ const AppContent: React.FC = () => {
     isFieldAppView,
     setIsFieldAppView,
     currentUser,
+    currentCompany,
     isAuthModalOpen,
     closeAuthModal,
     importStatus,
@@ -30,6 +31,64 @@ const AppContent: React.FC = () => {
   // If not logged in, ALWAYS render the Login Screen
   if (!isAuthenticated) {
     return <LoginView />;
+  }
+
+  // Super Admin view ONLY rendered if user is strictly the Super Admin
+  if (activeView === 'superadmin' && isSuperAdmin) {
+    return (
+      <div className="min-h-screen bg-[#f8f9ff]">
+        <SuperAdminDashboard />
+      </div>
+    );
+  }
+
+  // Plan Enforcement Gate:
+  // If authenticated and NOT SuperAdmin, user MUST have an active plan.
+  // If user has no active plan (planStatus !== 'ativo' or accountStatus === 'suspenso'),
+  // lock all operational views and field app simulator, redirecting directly to Plans & Payment.
+  const hasActivePlan =
+    isSuperAdmin ||
+    (currentCompany &&
+      currentCompany.planStatus === 'ativo' &&
+      currentCompany.accountStatus !== 'suspenso');
+
+  if (!hasActivePlan) {
+    return (
+      <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex flex-col font-body">
+        <Navbar />
+
+        {/* Warning Banner */}
+        <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 px-4 py-3 shadow-md flex items-center justify-center gap-3 text-xs font-bold border-b border-amber-600">
+          <span className="material-symbols-outlined text-[20px] text-slate-950">lock</span>
+          <span>
+            Acesso Restrito: Sua conta não possui um plano ativo no momento. Escolha um plano abaixo para liberar o uso completo do InstalaSaldo.
+          </span>
+        </div>
+
+        <main className="flex-1 pb-16">
+          <PlansView />
+        </main>
+
+        {/* Footer */}
+        <footer className="bg-white border-t border-slate-200 py-6 px-4">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <span className="font-headline font-bold text-slate-800">InstalaSaldo</span>
+              <span>• Micro SaaS para Técnicos e Prestadores de Manutenção</span>
+            </div>
+            <div className="flex items-center gap-3 text-slate-500">
+              <span>Suporte: <strong className="text-slate-800">agenciavallor01@gmail.com</strong></span>
+              <span>•</span>
+              <span className="text-amber-700 font-bold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+                Aguardando Pagamento: {currentUser.name}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-mono">v2.4.0-core • Brasil</span>
+          </div>
+        </footer>
+      </div>
+    );
   }
 
   // If Mobile Field App simulator view is active, render MobileFieldApp container with simulator controls
@@ -55,15 +114,6 @@ const AppContent: React.FC = () => {
         <div className="w-full max-w-md shadow-2xl rounded-3xl overflow-hidden ring-8 ring-slate-800">
           <MobileFieldApp />
         </div>
-      </div>
-    );
-  }
-
-  // Super Admin view ONLY rendered if user is strictly the Super Admin
-  if (activeView === 'superadmin' && isSuperAdmin) {
-    return (
-      <div className="min-h-screen bg-[#f8f9ff]">
-        <SuperAdminDashboard />
       </div>
     );
   }

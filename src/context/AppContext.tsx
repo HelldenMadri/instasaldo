@@ -748,6 +748,7 @@ interface AppContextType {
   isSuperAdmin: boolean;
   isAuthenticated: boolean;
   loginWithCredentials: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  signupWithCredentials: (data: { name: string; companyName: string; email: string; phone: string; password?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   activeView: string;
   setActiveView: (view: string) => void;
@@ -1119,18 +1120,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const newCompanyId = `comp-${Date.now()}`;
           const newCompany: Company = {
             id: newCompanyId,
-            name: `${cleanEmail.split('@')[0]} Climatização & Serviços`,
-            document: '12.345.678/0001-90',
+            name: `${cleanEmail.split('@')[0]} Serviços`,
+            document: '',
             email: cleanEmail,
-            phone: '(11) 98765-4321',
-            plan: 'profissional',
-            planStatus: 'ativo',
-            accountStatus: 'ativo',
-            monthlyPrice: 97,
-            nextBillingDate: '2026-11-17',
-            city: 'São Paulo',
-            state: 'SP',
-            ownerName: cleanEmail.split('@')[0],
+            phone: '',
+            plan: 'essencial',
+            planStatus: 'pendente',
+            accountStatus: 'trial',
+            monthlyPrice: 0,
+            nextBillingDate: '',
+            city: '',
+            state: '',
+            ownerName: '',
             ownerEmail: cleanEmail,
             totalOrdersCount: 0,
             totalVolume: 0,
@@ -1138,18 +1139,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             lastActivity: 'Agora mesmo',
             createdAt: new Date().toISOString().split('T')[0],
             whatsappConfig: {
-              enabled: true,
+              enabled: false,
               provider: 'manual_fallback',
-              status: 'conectado',
+              status: 'desconectado',
               deliveryFormat: 'documento_formatado',
               apiKeyConfigured: false,
             },
             features: {
-              whatsappAutomated: true,
-              digitalSignature: true,
-              advancedReports: true,
+              whatsappAutomated: false,
+              digitalSignature: false,
+              advancedReports: false,
               customBranding: false,
-              multiTechnicianDispatch: true,
+              multiTechnicianDispatch: false,
             },
           };
           targetUser = {
@@ -1160,7 +1161,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             companyId: newCompanyId,
             companyName: newCompany.name,
             status: 'ativo',
-            phone: '(11) 98765-4321',
+            phone: '',
             createdAt: new Date().toISOString().split('T')[0],
             lastLogin: 'Agora mesmo',
             isOwner: false,
@@ -1187,8 +1188,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(`${STORAGE_KEY}_authenticated`, 'true');
       localStorage.setItem(`${STORAGE_KEY}_currentUserId`, targetUser.id);
 
+      const targetCompany = companies.find((c) => c.id === targetUser!.companyId);
       if (targetUser.email.toLowerCase() === 'agenciavallor01@gmail.com') {
         setActiveView('superadmin');
+      } else if (!targetCompany || targetCompany.planStatus !== 'ativo' || targetCompany.accountStatus === 'suspenso') {
+        setActiveView('planos');
       } else {
         setActiveView('inicio');
       }
@@ -1197,6 +1201,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message || 'Erro ao realizar login.' };
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const signupWithCredentials = async (data: {
+    name: string;
+    companyName: string;
+    email: string;
+    phone: string;
+    password?: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    setAuthLoading(true);
+    const cleanEmail = data.email.trim().toLowerCase();
+
+    if (cleanEmail === 'agenciavallor01@gmail.com') {
+      setAuthLoading(false);
+      return { success: false, error: 'Este e-mail é reservado para a administração master do sistema.' };
+    }
+
+    const existingUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existingUser) {
+      setAuthLoading(false);
+      return { success: false, error: 'Já existe uma conta cadastrada com este e-mail. Faça login.' };
+    }
+
+    try {
+      const newUserId = `usr-${Date.now()}`;
+      const newCompanyId = `comp-${Date.now()}`;
+
+      const newCompany: Company = {
+        id: newCompanyId,
+        name: data.companyName.trim() || `${data.name.trim()} Climatização`,
+        document: '',
+        email: cleanEmail,
+        phone: data.phone.trim() || '',
+        plan: 'essencial',
+        planStatus: 'pendente',
+        accountStatus: 'trial',
+        monthlyPrice: 0,
+        nextBillingDate: '',
+        city: '',
+        state: '',
+        ownerName: data.name.trim(),
+        ownerEmail: cleanEmail,
+        totalOrdersCount: 0,
+        totalVolume: 0,
+        teamMembersCount: 1,
+        lastActivity: 'Agora mesmo',
+        createdAt: new Date().toISOString().split('T')[0],
+        whatsappConfig: {
+          enabled: false,
+          provider: 'manual_fallback',
+          status: 'desconectado',
+          deliveryFormat: 'documento_formatado',
+          apiKeyConfigured: false,
+        },
+        features: {
+          whatsappAutomated: false,
+          digitalSignature: false,
+          advancedReports: false,
+          customBranding: false,
+          multiTechnicianDispatch: false,
+        },
+      };
+
+      const newUser: User = {
+        id: newUserId,
+        name: data.name.trim(),
+        email: cleanEmail,
+        role: 'empresa_admin',
+        companyId: newCompanyId,
+        companyName: newCompany.name,
+        status: 'ativo',
+        phone: data.phone.trim() || '',
+        createdAt: new Date().toISOString().split('T')[0],
+        lastLogin: 'Agora mesmo',
+        isOwner: false,
+      };
+
+      setCompanies((prev) => [newCompany, ...prev]);
+      setUsers((prev) => [newUser, ...prev]);
+
+      setCurrentUserId(newUser.id);
+      setIsAuthenticated(true);
+      localStorage.setItem(`${STORAGE_KEY}_authenticated`, 'true');
+      localStorage.setItem(`${STORAGE_KEY}_currentUserId`, newUser.id);
+
+      setActiveView('planos');
+
+      logAudit('SIGNUP', cleanEmail, `Nova conta criada: ${newUser.name} (${newCompany.name}) - Aguardando ativação de plano.`);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Erro ao criar conta.' };
     } finally {
       setAuthLoading(false);
     }
@@ -1653,14 +1751,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Subscriptions & Super Admin controls
   const changeCompanyPlan = (companyId: string, newPlan: PlanTier) => {
     const price = PLAN_CONFIGS[newPlan].price;
+    const now = new Date();
+    const nextMonth = new Date(now.setMonth(now.getMonth() + 1)).toISOString().split('T')[0];
     setCompanies((prev) =>
       prev.map((c) =>
         c.id === companyId
-          ? { ...c, plan: newPlan, monthlyPrice: price }
+          ? {
+              ...c,
+              plan: newPlan,
+              monthlyPrice: price,
+              planStatus: 'ativo',
+              accountStatus: 'ativo',
+              nextBillingDate: nextMonth,
+            }
           : c
       )
     );
-    logAudit('CHANGE_PLAN', companyId, `Plano alterado para ${newPlan} (R$ ${price}/mês)`);
+    // Also unlock any user associated with this company
+    setUsers((prev) =>
+      prev.map((u) => (u.companyId === companyId ? { ...u, status: 'ativo' } : u))
+    );
+    logAudit('CHANGE_PLAN', companyId, `Plano ativado/alterado para ${newPlan} (R$ ${price}/mês)`);
   };
 
   const updateCompanyStatus = (companyId: string, newStatus: PlanStatus) => {
@@ -1904,6 +2015,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: feedback };
   };
 
+  // Multi-tenant data isolation:
+  // SuperAdmin sees all records; normal companies only see their own records (clean/zeroed for new users)
+  const tenantClients = isSuperAdmin ? clients : clients.filter((c) => c.companyId === currentUser.companyId);
+  const tenantServices = isSuperAdmin ? services : services.filter((s) => s.companyId === currentUser.companyId);
+  const tenantBudgets = isSuperAdmin ? budgets : budgets.filter((b) => b.companyId === currentUser.companyId);
+  const tenantWorkOrders = isSuperAdmin ? workOrders : workOrders.filter((w) => w.companyId === currentUser.companyId);
+  const tenantTeamMembers = isSuperAdmin ? teamMembers : teamMembers.filter((t) => t.companyId === currentUser.companyId);
+
   return (
     <AppContext.Provider
       value={{
@@ -1911,15 +2030,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         users,
         companies,
         currentCompany,
-        clients,
-        services,
-        budgets,
-        workOrders,
-        teamMembers,
+        clients: tenantClients,
+        services: tenantServices,
+        budgets: tenantBudgets,
+        workOrders: tenantWorkOrders,
+        teamMembers: tenantTeamMembers,
         invoices,
         isSuperAdmin,
         isAuthenticated,
         loginWithCredentials,
+        signupWithCredentials,
         logout,
         activeView,
         setActiveView,

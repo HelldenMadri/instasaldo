@@ -56,23 +56,41 @@ export const Navbar: React.FC = () => {
 
         {/* Center: Desktop Navigation Links */}
         <nav className="hidden xl:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <button
-              key={link.id}
-              onClick={() => {
-                setActiveView(link.id);
-                setIsFieldAppView(false);
-              }}
-              className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeView === link.id && !isFieldAppView
-                  ? 'bg-[#1a2744] text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[17px]">{link.icon}</span>
-              <span>{link.label}</span>
-            </button>
-          ))}
+          {navLinks.map((link) => {
+            const hasActivePlan =
+              isSuperAdmin ||
+              (currentCompany &&
+                currentCompany.planStatus === 'ativo' &&
+                currentCompany.accountStatus !== 'suspenso');
+            const isLocked = !hasActivePlan && link.id !== 'planos';
+
+            return (
+              <button
+                key={link.id}
+                onClick={() => {
+                  if (isLocked) {
+                    setActiveView('planos');
+                  } else {
+                    setActiveView(link.id);
+                  }
+                  setIsFieldAppView(false);
+                }}
+                className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                  activeView === link.id && !isFieldAppView
+                    ? 'bg-[#1a2744] text-white shadow-sm'
+                    : isLocked
+                    ? 'text-slate-400 hover:bg-amber-50 hover:text-amber-800'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[17px]">{link.icon}</span>
+                <span>{link.label}</span>
+                {isLocked && (
+                  <span className="material-symbols-outlined text-[13px] text-amber-500">lock</span>
+                )}
+              </button>
+            );
+          })}
 
           {/* Super Admin Tab - STRICTLY ONLY for agenciavallor01@gmail.com */}
           {isSuperAdmin && (
@@ -255,22 +273,38 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Secondary Bar for small screens */}
       <div className="xl:hidden flex items-center overflow-x-auto px-4 py-2 bg-slate-50 border-t border-slate-200/60 no-scrollbar gap-1.5">
-        {navLinks.map((link) => (
-          <button
-            key={link.id}
-            onClick={() => {
-              setActiveView(link.id);
-              setIsFieldAppView(false);
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-              activeView === link.id && !isFieldAppView
-                ? 'bg-[#1a2744] text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            {link.label}
-          </button>
-        ))}
+        {navLinks.map((link) => {
+          const hasActivePlan =
+            isSuperAdmin ||
+            (currentCompany &&
+              currentCompany.planStatus === 'ativo' &&
+              currentCompany.accountStatus !== 'suspenso');
+          const isLocked = !hasActivePlan && link.id !== 'planos';
+
+          return (
+            <button
+              key={link.id}
+              onClick={() => {
+                if (isLocked) {
+                  setActiveView('planos');
+                } else {
+                  setActiveView(link.id);
+                }
+                setIsFieldAppView(false);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
+                activeView === link.id && !isFieldAppView
+                  ? 'bg-[#1a2744] text-white shadow-sm'
+                  : isLocked
+                  ? 'text-slate-400 bg-slate-100'
+                  : 'text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <span>{link.label}</span>
+              {isLocked && <span className="material-symbols-outlined text-[12px] text-amber-500">lock</span>}
+            </button>
+          );
+        })}
         {isSuperAdmin && (
           <button
             onClick={() => {

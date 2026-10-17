@@ -11,6 +11,7 @@ export const SuperAdminDashboard: React.FC = () => {
     users,
     companies,
     updateUserAdmin,
+    toggleCompanySuspension,
     auditLogs,
     setActiveView,
     loginAsRole,
@@ -202,10 +203,10 @@ export const SuperAdminDashboard: React.FC = () => {
                 { id: 'visao-geral', label: 'Visão Geral', icon: 'grid_view' },
                 { id: 'empresas', label: 'Empresas', icon: 'apartment' },
                 { id: 'usuarios', label: 'Usuários', icon: 'manage_accounts' },
-                { id: 'assinaturas-planos', label: 'Assinaturas & Planos', icon: 'credit_card' },
-                { id: 'equipes', label: 'Equipes', icon: 'groups' },
-                { id: 'auditoria-logs', label: 'Auditoria & Logs', icon: 'shield' },
-                { id: 'configuracoes-sistema', label: 'Configurações do Sistema', icon: 'tune' },
+                { id: 'assinaturas', label: 'Assinaturas & Planos', icon: 'credit_card' },
+                { id: 'equipes', label: 'Equipes & Técnicos', icon: 'groups' },
+                { id: 'auditoria', label: 'Auditoria & Logs', icon: 'shield' },
+                { id: 'configuracoes', label: 'Configurações do Sistema', icon: 'tune' },
               ].map((item) => (
                 <button
                   key={item.id}
@@ -353,11 +354,12 @@ export const SuperAdminDashboard: React.FC = () => {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
             {[
               { id: 'visao-geral', label: 'Visão Geral & KPIs', icon: 'speed' },
-              { id: 'empresas', label: 'Empresas (1.248)', icon: 'apartment' },
-              { id: 'usuarios', label: 'Usuários & Operadores (3.890)', icon: 'manage_accounts' },
+              { id: 'empresas', label: `Empresas (${companies.length})`, icon: 'apartment' },
+              { id: 'usuarios', label: `Usuários (${users.length})`, icon: 'manage_accounts' },
               { id: 'assinaturas', label: 'Planos & Assinaturas', icon: 'credit_card' },
+              { id: 'equipes', label: 'Equipes & Técnicos', icon: 'groups' },
               { id: 'auditoria', label: 'Auditoria & Segurança', icon: 'shield' },
-              { id: 'webhooks', label: 'Webhooks & Gateways', icon: 'dns' },
+              { id: 'configuracoes', label: 'Configurações', icon: 'tune' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -374,8 +376,11 @@ export const SuperAdminDashboard: React.FC = () => {
             ))}
           </div>
 
-          {/* Top 6 KPI Metric Cards (Image 7) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {/* ABA 1: VISÃO GERAL */}
+          {activeTabPill === 'visao-geral' && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Top 6 KPI Metric Cards (Image 7) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {/* KPI 1 */}
             <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between text-slate-500">
@@ -706,8 +711,59 @@ export const SuperAdminDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Diretório de Usuários & Assinantes (Table + Interactive Drawer - Image 7) */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Seção Inferior: Atividade de Segurança & Monitoramento de Webhooks */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">security</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[#04122e]">Liquidações Pix Banco Central</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5">
+                    Gateways ativos operando com 99.98% de SLA nas confirmações em lote.
+                  </span>
+                  <span className="text-[#006c49] text-[11px] font-bold mt-1">
+                    Status: Normal (Latência 240ms)
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">fingerprint</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[#04122e]">2FA & Autenticação de Técnicos</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5">
+                    3.140 instaladores com biometria ou código SMS obrigatório ativados no aparelho.
+                  </span>
+                  <span className="text-[#04122e] text-[11px] font-bold mt-1">
+                    Conformidade: 80.7%
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">cloud_sync</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[#04122e]">Backups Contábeis em Nuvem</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5">
+                    Último snapshot criptografado das tabelas financeiras gravado com sucesso.
+                  </span>
+                  <span className="text-slate-400 text-[11px] font-medium mt-1">
+                    Hoje às 03:00 UTC-3
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ABA: USUÁRIOS & OPERADORES */}
+        {activeTabPill === 'usuarios' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
             {/* Table Header Filter Bar */}
             <div className="p-5 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -1136,57 +1192,479 @@ export const SuperAdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
 
-          {/* Seção Inferior: Atividade de Segurança & Monitoramento de Webhooks (Image 7) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Card 1 */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[22px]">security</span>
+        {/* ABA: EMPRESAS */}
+        {activeTabPill === 'empresas' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+            <div className="p-5 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-headline text-base font-bold text-[#04122e]">
+                    Empresas & Negócios Cadastrados
+                  </span>
+                  <span className="bg-blue-100 text-[#04122e] text-xs px-2.5 py-0.5 rounded-full font-bold">
+                    {companies.length} Empresas
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Gerencie permissões empresariais, planos de cobrança e suspensão de contas.
+                </p>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-[#04122e]">Liquidações Pix Banco Central</span>
-                <span className="text-[11px] text-slate-500 mt-0.5">
-                  Gateways ativos operando com 99.98% de SLA nas confirmações em lote.
-                </span>
-                <span className="text-[#006c49] text-[11px] font-bold mt-1">
-                  Status: Normal (Latência 240ms)
-                </span>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative min-w-[240px]">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar empresa, CNPJ, cidade..."
+                    className="w-full h-10 pl-9 pr-4 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[#1a2744]"
+                  />
+                </div>
+                <select
+                  value={filterPlan}
+                  onChange={(e) => setFilterPlan(e.target.value)}
+                  className="h-10 px-3 bg-white border border-slate-200 text-xs text-slate-700 font-semibold rounded-lg outline-none cursor-pointer"
+                >
+                  <option value="all">Planos: Todos</option>
+                  <option value="essencial">Essencial (R$ 37/mês)</option>
+                  <option value="profissional">Profissional (R$ 97/mês)</option>
+                  <option value="empresa">Empresa (R$ 147/mês)</option>
+                </select>
               </div>
             </div>
 
-            {/* Card 2 */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[22px]">fingerprint</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-[#04122e]">2FA & Autenticação de Técnicos</span>
-                <span className="text-[11px] text-slate-500 mt-0.5">
-                  3.140 instaladores com biometria ou código SMS obrigatório ativados no aparelho.
-                </span>
-                <span className="text-[#04122e] text-[11px] font-bold mt-1">
-                  Conformidade: 80.7%
-                </span>
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100/70 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                    <th className="py-3 px-4">Empresa / Documento</th>
+                    <th className="py-3 px-4">Responsável / E-mail</th>
+                    <th className="py-3 px-4">Localização</th>
+                    <th className="py-3 px-4">Plano Vigente</th>
+                    <th className="py-3 px-4">Status da Assinatura</th>
+                    <th className="py-3 px-4">Ordens de Serviço</th>
+                    <th className="py-3 px-4">Volume Faturado</th>
+                    <th className="py-3 px-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-800">
+                  {companies
+                    .filter((c) => {
+                      const matchesSearch =
+                        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        c.document.includes(searchTerm) ||
+                        c.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        c.email.toLowerCase().includes(searchTerm.toLowerCase());
+                      const matchesPlan = filterPlan === 'all' || c.plan === filterPlan;
+                      return matchesSearch && matchesPlan;
+                    })
+                    .map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-[#04122e] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                              <span className="material-symbols-outlined text-[18px]">apartment</span>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-bold text-slate-900 truncate">{c.name}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">{c.document || 'Sem CNPJ informado'}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-slate-800">{c.ownerName || 'Responsável'}</span>
+                            <span className="text-[11px] text-slate-400 truncate">{c.email}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">
+                          {c.city && c.state ? `${c.city}/${c.state}` : 'Brasil'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-[11px] bg-blue-100 text-[#04122e] px-2.5 py-0.5 rounded-full font-bold capitalize">
+                            {c.plan} (R$ {c.monthlyPrice}/mês)
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                              c.planStatus === 'ativo'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : c.planStatus === 'pendente'
+                                ? 'bg-amber-100 text-amber-900'
+                                : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                c.planStatus === 'ativo'
+                                  ? 'bg-emerald-600'
+                                  : c.planStatus === 'pendente'
+                                  ? 'bg-amber-600'
+                                  : 'bg-red-600'
+                              }`}
+                            />
+                            <span className="capitalize">{c.planStatus}</span>
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-bold text-slate-800">{c.totalOrdersCount} OS</td>
+                        <td className="py-3 px-4 font-bold text-[#006c49]">{formatCurrency(c.totalVolume)}</td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setManageModalCompany(c)}
+                              className="px-2.5 py-1.5 rounded-lg bg-[#04122e] hover:bg-[#1a2744] text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-sm transition-all"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">settings</span>
+                              <span>Gerenciar</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                toggleCompanySuspension(c.id);
+                                showToast(`Status da empresa ${c.name} atualizado com sucesso.`);
+                              }}
+                              className={`px-2 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
+                                c.accountStatus === 'suspenso'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+                                  : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                              }`}
+                              title={c.accountStatus === 'suspenso' ? 'Reativar conta' : 'Suspender acesso'}
+                            >
+                              {c.accountStatus === 'suspenso' ? 'Reativar' : 'Suspender'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ABA: ASSINATURAS & PLANOS */}
+        {activeTabPill === 'assinaturas' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* 3 Plan Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                {
+                  tier: 'essencial',
+                  name: 'Essencial',
+                  price: 'R$ 37,00',
+                  period: '/mês',
+                  subscribers: '485 assinantes',
+                  mrr: 'R$ 17.945,00/mês',
+                  badge: 'Autônomos',
+                  features: ['Suporte exclusivo por E-mail', 'Até 50 clientes ativos', 'Cadastro de serviços e saldos', 'Comprovante Pix básico'],
+                },
+                {
+                  tier: 'profissional',
+                  name: 'Profissional',
+                  price: 'R$ 97,00',
+                  period: '/mês',
+                  subscribers: '520 assinantes',
+                  mrr: 'R$ 50.440,00/mês',
+                  badge: 'Mais Popular',
+                  features: ['Suporte via WhatsApp e E-mail', 'Orçamentos & conversão em OS', 'Fotos antes/depois e assinatura na tela', 'Até 250 clientes'],
+                },
+                {
+                  tier: 'empresa',
+                  name: 'Empresa',
+                  price: 'R$ 147,00',
+                  period: '/mês',
+                  subscribers: '175 assinantes',
+                  mrr: 'R$ 25.725,00/mês',
+                  badge: 'Frotas & Equipes',
+                  features: ['Gestão multi-técnicos e equipes', 'Distribuição de rotas de campo', 'Relatórios contábeis e exportação', 'Clientes e OS ilimitados'],
+                },
+              ].map((p) => (
+                <div key={p.tier} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-headline font-bold text-lg text-[#04122e]">{p.name}</span>
+                      <span className="bg-blue-100 text-[#04122e] text-[10px] font-bold px-2 py-0.5 rounded-full">{p.badge}</span>
+                    </div>
+                    <div className="flex items-baseline gap-1 mb-2">
+                      <span className="font-headline font-extrabold text-2xl text-[#04122e]">{p.price}</span>
+                      <span className="text-xs text-slate-500">{p.period}</span>
+                    </div>
+                    <div className="text-xs text-emerald-700 font-bold mb-4 flex items-center gap-2">
+                      <span>{p.subscribers}</span>
+                      <span>•</span>
+                      <span>{p.mrr}</span>
+                    </div>
+                    <ul className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                      {p.features.map((f, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Card 3 */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[22px]">cloud_sync</span>
+            {/* Subscriptions Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                  <h3 className="font-headline text-base font-bold text-[#04122e]">Faturamento & Cobrança de Assinaturas</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Visão consolidada das cobranças ativas e renovações Pix recorrentes.</p>
+                </div>
+                <span className="text-xs font-bold text-[#006c49] bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                  MRR Total: R$ 94.110,00/mês
+                </span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-[#04122e]">Backups Contábeis em Nuvem</span>
-                <span className="text-[11px] text-slate-500 mt-0.5">
-                  Último snapshot criptografado das tabelas financeiras gravado com sucesso.
-                </span>
-                <span className="text-slate-400 text-[11px] font-medium mt-1">
-                  Hoje às 03:00 UTC-3
-                </span>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-100/70 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                      <th className="py-3 px-4">Empresa</th>
+                      <th className="py-3 px-4">Plano</th>
+                      <th className="py-3 px-4">Mensalidade</th>
+                      <th className="py-3 px-4">Status Cobrança</th>
+                      <th className="py-3 px-4">Próxima Renovação</th>
+                      <th className="py-3 px-4">Método</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-800">
+                    {companies.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-50">
+                        <td className="py-3 px-4 font-bold">{c.name}</td>
+                        <td className="py-3 px-4 capitalize font-semibold">{c.plan}</td>
+                        <td className="py-3 px-4 font-bold text-[#04122e]">{formatCurrency(c.monthlyPrice)}/mês</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${c.planStatus === 'ativo' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
+                            {c.planStatus.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">{c.nextBillingDate || 'Aguardando Ativação'}</td>
+                        <td className="py-3 px-4 font-semibold text-slate-700">Pix Recorrente</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
+        )}
+
+        {/* ABA: EQUIPES */}
+        {activeTabPill === 'equipes' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+            <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-headline text-base font-bold text-[#04122e]">Gestão de Equipes & Técnicos Multiempresa</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Visão unificada de instaladores, operadores e administradores de cada empresa parceira.</p>
+              </div>
+              <span className="bg-blue-100 text-[#04122e] text-xs px-3 py-1 rounded-full font-bold">
+                {users.length} Colaboradores
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100/70 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                    <th className="py-3 px-4">Profissional</th>
+                    <th className="py-3 px-4">Empresa Vinculada</th>
+                    <th className="py-3 px-4">Cargo / Função</th>
+                    <th className="py-3 px-4">Dispositivo Conectado</th>
+                    <th className="py-3 px-4">Telefone / WhatsApp</th>
+                    <th className="py-3 px-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-800">
+                  {users.map((u) => {
+                    const comp = companies.find((c) => c.id === u.companyId);
+                    return (
+                      <tr key={u.id} className="hover:bg-slate-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-[#04122e] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                              {u.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-900">{u.name}</span>
+                              <span className="text-[11px] text-slate-400">{u.email}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-700">{comp?.name || u.companyName || 'InstalaSaldo'}</td>
+                        <td className="py-3 px-4">
+                          <span className="bg-blue-50 text-[#04122e] px-2.5 py-0.5 rounded-full font-bold uppercase text-[10px]">
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600 flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[16px] text-slate-400">smartphone</span>
+                          <span>{u.connectedDevice || 'PWA Mobile v2.4'}</span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600 font-mono">{u.phone || '(11) 98765-4321'}</td>
+                        <td className="py-3 px-4">
+                          <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px] capitalize">
+                            {u.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ABA: AUDITORIA & LOGS */}
+        {activeTabPill === 'auditoria' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* 3 Security Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">security</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[#04122e]">Liquidações Pix Banco Central</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5">Gateways operando com 99.98% de SLA nas confirmações em lote.</span>
+                  <span className="text-[#006c49] text-[11px] font-bold mt-1">Status: Normal (Latência 240ms)</span>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">fingerprint</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[#04122e]">2FA & Autenticação de Técnicos</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5">3.140 instaladores com biometria ou código SMS obrigatório ativados.</span>
+                  <span className="text-[#04122e] text-[11px] font-bold mt-1">Conformidade: 80.7%</span>
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">cloud_sync</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-[#04122e]">Backups Contábeis em Nuvem</span>
+                  <span className="text-[11px] text-slate-500 mt-0.5">Último snapshot criptografado das tabelas financeiras gravado com sucesso.</span>
+                  <span className="text-slate-400 text-[11px] font-medium mt-1">Hoje às 03:00 UTC-3</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Audit Log Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                  <h3 className="font-headline text-base font-bold text-[#04122e]">Logs de Auditoria do Sistema em Tempo Real</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Rastreamento de autenticação, operações de saldo, orçamentos e alterações contratuais.</p>
+                </div>
+                <span className="bg-blue-100 text-[#04122e] text-xs px-2.5 py-0.5 rounded-full font-bold">
+                  {auditLogs.length} Eventos Registrados
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-100/70 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                      <th className="py-3 px-4">Data / Hora</th>
+                      <th className="py-3 px-4">Usuário</th>
+                      <th className="py-3 px-4">Ação</th>
+                      <th className="py-3 px-4">Alvo</th>
+                      <th className="py-3 px-4">IP</th>
+                      <th className="py-3 px-4">Detalhes da Operação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-800">
+                    {auditLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-50">
+                        <td className="py-3 px-4 font-mono text-slate-500 whitespace-nowrap">{log.timestamp}</td>
+                        <td className="py-3 px-4 font-bold text-slate-900">{log.userName}</td>
+                        <td className="py-3 px-4">
+                          <span className="bg-slate-100 text-[#04122e] font-mono px-2 py-0.5 rounded text-[10px] font-bold">
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-mono text-slate-600">{log.target}</td>
+                        <td className="py-3 px-4 font-mono text-slate-400">{log.ipAddress}</td>
+                        <td className="py-3 px-4 text-slate-600">{log.details}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ABA: CONFIGURAÇÕES */}
+        {activeTabPill === 'configuracoes' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#04122e] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[22px]">payments</span>
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-base text-[#04122e]">Gateways de Pagamento Pix</h3>
+                  <p className="text-xs text-slate-500">Configuração de liquidações automáticas e chave Pix recebedora master.</p>
+                </div>
+              </div>
+              <div className="space-y-3 border-t border-slate-100 pt-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Chave Pix Master (Recebimento de Mensalidades)</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value="agenciavallor01@gmail.com"
+                    className="w-full h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-mono text-xs font-bold"
+                  />
+                </div>
+                <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="font-bold text-emerald-900 text-xs">Webhook Pix Banco Central Ativo</span>
+                  </div>
+                  <span className="text-[11px] text-emerald-700 font-mono">SLA 99.98%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#006c49] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[22px]">chat</span>
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-base text-[#04122e]">WhatsApp & Meta Cloud API</h3>
+                  <p className="text-xs text-slate-500">Envio automático de ordens de serviço e recibos de sinal Pix.</p>
+                </div>
+              </div>
+              <div className="space-y-3 border-t border-slate-100 pt-3 text-xs">
+                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
+                  <div>
+                    <span className="font-bold text-[#04122e] block">Modo Híbrido Ativado</span>
+                    <span className="text-[11px] text-slate-500">Disparo via link wa.me direto ou via Meta Cloud API</span>
+                  </div>
+                  <span className="bg-[#04122e] text-[#4edea3] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Pronto</span>
+                </div>
+                <button
+                  onClick={() => showToast('Configurações salvas e aplicadas em todos os servidores com sucesso!')}
+                  className="w-full h-10 bg-[#04122e] hover:bg-[#1a2744] text-white font-bold rounded-xl text-xs transition-all shadow-sm"
+                >
+                  Salvar Parâmetros Globais
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         </main>
       </div>
 
