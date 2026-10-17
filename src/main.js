@@ -32,6 +32,9 @@ import {
   fetchAuditLogs,
   fetchTeamMembers,
   addTeamMember,
+  SUBSCRIPTION_PLANS,
+  normalizePlanKey,
+  migrateCompanyPlan,
 } from './api.js';
 
 import { formatBRL, toCents, validatePayment } from './money.js';
@@ -377,10 +380,19 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
   document.getElementById('form-new-service')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const cliente = document.getElementById('input-svc-cliente').value.trim();
-    const tipo = document.getElementById('input-svc-tipo').value.trim();
+    const tipo = document.getElementById('input-svc-tipo').value;
+    const desc = document.getElementById('input-svc-desc').value.trim();
     const totalVal = document.getElementById('input-svc-total').value;
     const recVal = document.getElementById('input-svc-recebido').value;
     const data = document.getElementById('input-svc-data').value;
+    const errBox = document.getElementById('svc-desc-error');
+
+    if (!desc) {
+      if (errBox) errBox.style.display = 'block';
+      alert('A descrição do serviço é obrigatória.');
+      return;
+    }
+    if (errBox) errBox.style.display = 'none';
 
     const vCents = toCents(totalVal);
     const rCents = toCents(recVal);
@@ -394,7 +406,10 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
     try {
       await createService({
         cliente,
+        service_type: tipo,
         tipo,
+        description: desc,
+        descricao: desc,
         valor_cents: vCents,
         recebido_cents: rCents,
         data,
@@ -796,6 +811,13 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
   // Modal: Nova Ordem de Serviço
   const modalNewOS = document.getElementById('modal-new-work-order');
   async function openNewWorkOrderModal() {
+    const userPlan = currentCompany?.plan_id || 'essencial';
+    const planKey = normalizePlanKey(userPlan);
+    if (!isSuper && planKey === 'essencial') {
+      alert('O módulo de Ordens de Serviço completas (com fotos e assinatura digital) está disponível a partir do Plano Profissional (R$ 97/mês). Acesse "Planos" para fazer upgrade!');
+      return;
+    }
+
     const select = document.getElementById('new-os-customer');
     if (select) {
       const customers = await fetchCustomers();
@@ -1012,6 +1034,12 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
   // 8. ABA 5: MAIS (ORÇAMENTOS, PLANOS, LEGAL)
   // -------------------------------------------------------------
   document.getElementById('menu-btn-quotes')?.addEventListener('click', () => {
+    const userPlan = currentCompany?.plan_id || 'essencial';
+    const planKey = normalizePlanKey(userPlan);
+    if (!isSuper && planKey === 'essencial') {
+      alert('O módulo de Orçamentos Comerciais está disponível a partir do Plano Profissional (R$ 97/mês). Acesse "Planos" para fazer upgrade!');
+      return;
+    }
     openNewQuoteModal();
   });
 
@@ -1051,10 +1079,11 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
   }
 
   document.getElementById('menu-btn-teams')?.addEventListener('click', async () => {
-    const userPlan = currentCompany?.plan_id || 'Solo';
-    // Super Admin tem acesso master e irrestrito a todos os recursos em qualquer empresa
-    if (!isSuper && userPlan !== 'Equipe' && userPlan !== 'Empresa' && userPlan !== 'Pro' && userPlan !== 'Enterprise') {
-      alert('Módulo de Equipes: seu plano atual (Solo) suporta 1 usuário. Faça upgrade para o plano Equipe ou Empresa para cadastrar instaladores e gerentes.');
+    const userPlan = currentCompany?.plan_id || 'essencial';
+    const planKey = normalizePlanKey(userPlan);
+    // Super Admin tem acesso master e irrestrito. Usuário comum precisa do plano Empresa
+    if (!isSuper && planKey !== 'empresa') {
+      alert('Módulo de Equipes & Funcionários: exclusivo do Plano Empresa (R$ 147/mês). Acesse "Planos" para gerenciar mais membros.');
       return;
     }
 
@@ -1099,11 +1128,83 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
   });
 
   const modalPlans = document.getElementById('modal-plans');
+
+  function updatePlansModalUI() {
+    const userPlan = currentCompany?.plan_id || 'essencial';
+    const planKey = normalizePlanKey(userPlan);
+
+    ['essencial', 'profissional', 'empresa'].forEach((key) => {
+      const badge = document.getElementById(`plan-status-${key}`);
+      const btn = document.getElementById(`btn-migrate-${key}`);
+      const card = document.getElementById(`plan-card-${key}`);
+      const planInfo = SUBSCRIPTION_PLANS[key];
+
+      if (key === planKey) {
+        if (badge) badge.style.display = 'block';
+        if (btn) {
+          btn.textContent = '✓ Seu Plano Atual';
+          btn.disabled = true;
+          btn.style.opacity = '0.65';
+          btn.style.cursor = 'default';
+        }
+        if (card) card.style.borderColor = 'var(--primary)';
+      } else {
+        if (badge) badge.style.display = 'none';
+        if (btn) {
+          btn.textContent = `Migrar para o Plano ${planInfo.name} (${planInfo.price_formatted}/mês)`;
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+        }
+        if (card && key !== 'profissional') card.style.borderColor = 'var(--border)';
+      }
+    });
+  }
+
   document.getElementById('menu-btn-plans')?.addEventListener('click', () => {
+    updatePlansModalUI();
     if (modalPlans) modalPlans.style.display = 'flex';
   });
   document.getElementById('btn-close-plans-modal')?.addEventListener('click', () => {
     if (modalPlans) modalPlans.style.display = 'none';
+  });
+
+  // Ação de migração de plano disponível para todos os usuários
+  document.querySelectorAll('.btn-migrate-plan').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const targetPlan = e.target.dataset.plan;
+      const targetInfo = SUBSCRIPTION_PLANS[targetPlan];
+      if (!targetInfo) return;
+
+      const userPlan = normalizePlanKey(currentCompany?.plan_id || 'essencial');
+      if (userPlan === targetPlan) {
+        alert(`Sua empresa já está no Plano ${targetInfo.name}.`);
+        return;
+      }
+
+      const confirmed = confirm(
+        `Confirma a migração para o Plano ${targetInfo.name} (${targetInfo.price_formatted}/mês)?\n\n` +
+          `• Usuários: Até ${targetInfo.max_users}\n` +
+          `• Suporte: ${targetInfo.support_label}\n` +
+          `• Cobrança: Recorrente Mensal (sem fidelidade)`
+      );
+
+      if (!confirmed) return;
+
+      try {
+        await migrateCompanyPlan(targetPlan);
+        currentCompany = await fetchCurrentCompany();
+        updatePlansModalUI();
+        showToast(`Plano alterado para ${targetInfo.name} com sucesso!`);
+        if (targetPlan !== 'essencial') {
+          alert(
+            `Parabéns! Sua conta agora está no Plano ${targetInfo.name}.\n\nSeu suporte prioritário no WhatsApp (55 85 99765-0795) e todos os novos recursos já estão liberados!`
+          );
+        }
+      } catch (err) {
+        alert(err.message || 'Erro ao migrar plano.');
+      }
+    });
   });
 
   const modalLegal = document.getElementById('modal-legal');
@@ -1114,23 +1215,24 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
     if (modalLegal) modalLegal.style.display = 'none';
   });
 
-  // Suporte ao Cliente — Regra de Planos:
-  // Plano Solo (1º plano): Apenas por e-mail (agenciavallor01@gmail.com)
-  // Plano Equipe/Empresa (a partir do 2º plano) e Super Admin: WhatsApp com atendimento prioritário
+  // Suporte ao Cliente — Regra de Planos Recorrentes Mensais:
+  // Plano Essencial (R$ 37/mês): Apenas por e-mail (agenciavallor01@gmail.com)
+  // Plano Profissional (R$ 97/mês) e Empresa (R$ 147/mês) e Super Admin: WhatsApp com atendimento prioritário (5585997650795)
   document.getElementById('menu-btn-support')?.addEventListener('click', () => {
-    const userPlan = currentCompany?.plan_id || 'Solo';
-    const isPriority = isSuper || userPlan === 'Equipe' || userPlan === 'Empresa' || userPlan === 'Pro' || userPlan === 'Enterprise';
+    const userPlan = currentCompany?.plan_id || 'essencial';
+    const planKey = normalizePlanKey(userPlan);
+    const isPriority = isSuper || planKey === 'profissional' || planKey === 'empresa';
 
     if (isPriority) {
-      const waMsg = `Olá, suporte prioritário da Agência Vallor! Sou da empresa "${currentCompany?.name || 'Cliente'}" (Plano ${userPlan}) e gostaria de atendimento técnico no InstalaSaldo.`;
-      const waLink = buildWhatsAppLink('11999999999', waMsg);
+      const waMsg = `Olá, suporte prioritário da Agência Vallor! Sou da empresa "${currentCompany?.name || 'Cliente'}" (Plano ${SUBSCRIPTION_PLANS[planKey]?.name || 'Profissional'}) e gostaria de atendimento técnico no InstalaSaldo.`;
+      const waLink = buildWhatsAppLink('5585997650795', waMsg);
       window.open(waLink, '_blank');
     } else {
-      const subject = encodeURIComponent('Suporte InstalaSaldo — Atendimento Plano Solo');
+      const subject = encodeURIComponent('Suporte InstalaSaldo — Atendimento Plano Essencial');
       const body = encodeURIComponent(
-        `Olá, equipe de suporte da Agência Vallor!\n\nEmpresa: ${currentCompany?.name || 'Não informada'}\nE-mail da conta: ${currentSession?.user?.email || ''}\nPlano: Solo\n\nDescreva sua solicitação:\n`
+        `Olá, equipe de suporte da Agência Vallor!\n\nEmpresa: ${currentCompany?.name || 'Não informada'}\nE-mail da conta: ${currentSession?.user?.email || ''}\nPlano: Essencial (R$ 37,00/mês)\n\nDescreva sua solicitação:\n`
       );
-      showToast('Plano Solo: Redirecionando para suporte via e-mail...');
+      showToast('Plano Essencial: Redirecionando para suporte exclusivo via e-mail...');
       window.location.href = `mailto:agenciavallor01@gmail.com?subject=${subject}&body=${body}`;
     }
   });
@@ -1159,9 +1261,17 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
     document.getElementById('stat-usuarios-ativos').textContent = stats.usuariosAtivos;
     document.getElementById('stat-usuarios-bloqueados').textContent = stats.usuariosBloqueados;
 
-    document.getElementById('stat-plano-basico').textContent = stats.empresasPorPlano.Solo || 0;
-    document.getElementById('stat-plano-pro').textContent = stats.empresasPorPlano.Equipe || 0;
-    document.getElementById('stat-plano-enterprise').textContent = stats.empresasPorPlano.Empresa || 0;
+    const mrrEl = document.getElementById('stat-mrr');
+    if (mrrEl) mrrEl.textContent = stats.mrr_formatted || 'R$ 0,00/mês';
+
+    const pEssencial = document.getElementById('stat-plano-essencial');
+    if (pEssencial) pEssencial.textContent = stats.empresasPorPlano.Essencial || 0;
+
+    const pProfissional = document.getElementById('stat-plano-profissional');
+    if (pProfissional) pProfissional.textContent = stats.empresasPorPlano.Profissional || 0;
+
+    const pEmpresa = document.getElementById('stat-plano-empresa');
+    if (pEmpresa) pEmpresa.textContent = stats.empresasPorPlano.Empresa || 0;
 
     await loadAdminUsersList();
     await loadAdminAuditLogs();
@@ -1178,12 +1288,15 @@ import { openQuoteVoucher, buildWhatsAppLink } from './pdf.js';
 
   function openEditUserModal(user) {
     if (!modalAdminEdit || !user) return;
+    const planKey = normalizePlanKey(user.plano);
+    const planName = SUBSCRIPTION_PLANS[planKey]?.name || 'Essencial';
+
     document.getElementById('admin-edit-uid').value = user.id;
     document.getElementById('admin-edit-email').value = user.email || '';
     document.getElementById('admin-edit-nome').value = user.nome || '';
     document.getElementById('admin-edit-empresa').value = user.empresa || '';
     document.getElementById('admin-edit-role').value = user.role || 'user';
-    document.getElementById('admin-edit-plano').value = user.plano || 'Solo';
+    document.getElementById('admin-edit-plano').value = planName;
     document.getElementById('admin-edit-status').value = user.status || 'ativo';
 
     modalAdminEdit.style.display = 'flex';

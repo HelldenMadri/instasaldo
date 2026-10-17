@@ -52,14 +52,17 @@ create table if not exists public.plans (
 
 insert into public.plans (id, name, price_cents, max_users, max_teams, features)
 values 
-  ('solo', 'Solo', 2990, 1, 1, '{"quotes": true, "customers": true, "maintenance": true, "os": true}'::jsonb),
-  ('equipe', 'Equipe', 6990, 5, 2, '{"quotes": true, "customers": true, "maintenance": true, "os": true, "teams": true, "signatures": true}'::jsonb),
-  ('empresa', 'Empresa', 12990, 15, 5, '{"quotes": true, "customers": true, "maintenance": true, "os": true, "teams": true, "signatures": true, "managers": true, "audit": true}'::jsonb)
+  ('essencial', 'Essencial', 3700, 1, 1, '{"billing": "mensal", "email_support": true, "whatsapp_support": false, "quotes": false, "os": false, "teams": false}'::jsonb),
+  ('profissional', 'Profissional', 9700, 5, 2, '{"billing": "mensal", "email_support": true, "whatsapp_support": true, "quotes": true, "os": true, "maintenance": true, "teams": false}'::jsonb),
+  ('empresa', 'Empresa', 14700, 15, 5, '{"billing": "mensal", "email_support": true, "whatsapp_support": true, "quotes": true, "os": true, "maintenance": true, "teams": true, "reports": true, "audit": true}'::jsonb),
+  ('solo', 'Essencial', 3700, 1, 1, '{"billing": "mensal", "email_support": true, "whatsapp_support": false}'::jsonb),
+  ('equipe', 'Profissional', 9700, 5, 2, '{"billing": "mensal", "email_support": true, "whatsapp_support": true}'::jsonb)
 on conflict (id) do update set
   name = excluded.name,
   price_cents = excluded.price_cents,
   max_users = excluded.max_users,
-  max_teams = excluded.max_teams;
+  max_teams = excluded.max_teams,
+  features = excluded.features;
 
 -- ------------------------------------------------------------------------------
 -- 4. TABELA: companies (Empresas)

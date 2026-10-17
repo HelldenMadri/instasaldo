@@ -86,6 +86,10 @@ import {
   fetchAdminStats,
   recordAuditLog,
   fetchAuditLogs,
+  updateAdminUser,
+  SUBSCRIPTION_PLANS,
+  normalizePlanKey,
+  canAccessFeature,
 } from './api.js';
 
 import { toCents, formatBRL, validatePayment } from './money.js';
@@ -285,16 +289,37 @@ describe('Work Order Rigorous Evidence & Completion Rules', () => {
   });
 });
 
-describe('Super Admin Protection and Platform Audit', () => {
+describe('Super Admin Protection, User Management and MRR Metrics', () => {
   test('Super Admin cannot be suspended or deleted', async () => {
     await expect(toggleUserStatus('super-admin-root')).rejects.toThrow('não pode ser suspensa');
     await expect(deleteAdminUser('super-admin-root')).rejects.toThrow('não pode ser excluída');
   });
 
-  test('fetchAdminStats returns consolidated metrics', async () => {
+  test('Super Admin role cannot be downgraded', async () => {
+    await expect(
+      updateAdminUser('super-admin-root', { role: 'instalador' })
+    ).rejects.toThrow('papel do Super Admin não pode ser alterado');
+  });
+
+  test('Super Admin can update other users successfully', async () => {
+    const updated = await updateAdminUser('usr-tech-01', {
+      nome: 'Carlos Técnico Master',
+      empresa: 'Solar Tech Brasil',
+      plano: 'Empresa',
+    });
+    expect(updated.nome).toBe('Carlos Técnico Master');
+    expect(updated.empresa).toBe('Solar Tech Brasil');
+    expect(updated.plano).toBe('Empresa');
+  });
+
+  test('fetchAdminStats returns MRR and recurring SaaS plan metrics', async () => {
     const stats = await fetchAdminStats();
     expect(stats.totalUsuarios).toBeGreaterThanOrEqual(1);
-    expect(stats.empresasPorPlano).toBeDefined();
+    expect(stats.mrr_cents).toBeGreaterThan(0);
+    expect(stats.mrr_formatted).toContain('/mês');
+    expect(stats.empresasPorPlano.Essencial).toBeDefined();
+    expect(stats.empresasPorPlano.Profissional).toBeDefined();
+    expect(stats.empresasPorPlano.Empresa).toBeDefined();
   });
 
   test('recordAuditLog registers audit trails', async () => {
@@ -302,5 +327,133 @@ describe('Super Admin Protection and Platform Audit', () => {
     expect(log.action).toBe('Teste Auditoria');
     const logs = await fetchAuditLogs();
     expect(logs[0].action).toBe('Teste Auditoria');
+  });
+});
+
+describe('Service Creation & Editing with Mandatory Type and Description', () => {
+  test('creates Instalação with description successfully', async () => {
+    const svc = await createService({
+      cliente: 'Mariana Duarte',
+      service_type: 'Instalação',
+      description: 'Instalação de ar-condicionado split de 12.000 BTUs Daikin',
+      valor: '1500,00',
+      valor_recebido: '500,00',
+    });
+    expect(svc.id).toBeDefined();
+    expect(svc.service_type).toBe('Instalação');
+    expect(svc.description).toBe('Instalação de ar-condicionado split de 12.000 BTUs Daikin');
+    expect(svc.valor_cents).toBe(150000);
+    expect(svc.recebido_cents).toBe(50000);
+  });
+
+  test('creates Manutenção with description successfully', async () => {
+    const svc = await createService({
+      cliente: 'Carlos Rocha',
+      service_type: 'Manutenção',
+      description: 'Carga de fluido refrigerante e limpeza química',
+      valor: '350,00',
+      valor_recebido: '350,00',
+    });
+    expect(svc.service_type).toBe('Manutenção');
+    expect(svc.status).toBe('concluido');
+  });
+
+  test('blocks creation without service_type or with invalid type', async () => {
+    await expect(
+      createService({
+        cliente: 'Sem Tipo',
+        description: 'Descrição válida',
+        valor: '100,00',
+        valor_recebido: '100,00',
+      })
+    ).rejects.toThrow('Selecione o tipo de serviço');
+
+    await expect(
+      createService({
+        cliente: 'Tipo Invalido',
+        service_type: 'OutroInvalido',
+        description: 'Descrição válida',
+        valor: '100,00',
+        valor_recebido: '100,00',
+      })
+    ).rejects.toThrow('Selecione o tipo de serviço');
+  });
+
+  test('blocks creation with empty description or only whitespace', async () => {
+    await expect(
+      createService({
+        cliente: 'Descricao Vazia',
+        service_type: 'Instalação',
+        description: '',
+        valor: '100,00',
+        valor_recebido: '100,00',
+      })
+    ).rejects.toThrow('A descrição do serviço é obrigatória.');
+
+    await expect(
+      createService({
+        cliente: 'Descricao Espacos',
+        service_type: 'Manutenção',
+        description: '    ',
+        valor: '100,00',
+        valor_recebido: '100,00',
+      })
+    ).rejects.toThrow('A descrição do serviço é obrigatória.');
+  });
+
+  test('updates service preserving and validating description', async () => {
+    const created = await createService({
+      cliente: 'Edicao Teste',
+      service_type: 'Instalação',
+      description: 'Descrição inicial',
+      valor: '500,00',
+      valor_recebido: '200,00',
+    });
+
+    const updated = await updateService(created.id, {
+      description: 'Descrição atualizada com detalhes adicionais',
+    });
+    expect(updated.description).toBe('Descrição atualizada com detalhes adicionais');
+
+    // Attempting empty description in update should throw
+    await expect(
+      updateService(created.id, { description: '   ' })
+    ).rejects.toThrow('A descrição do serviço é obrigatória.');
+  });
+});
+
+describe('SaaS Recurring Monthly Plans & Feature Access Rules', () => {
+  test('SUBSCRIPTION_PLANS defines Essencial, Profissional and Empresa prices', () => {
+    expect(SUBSCRIPTION_PLANS.essencial.price_cents).toBe(3700);
+    expect(SUBSCRIPTION_PLANS.essencial.billing_cycle).toBe('mensal');
+    expect(SUBSCRIPTION_PLANS.profissional.price_cents).toBe(4700);
+    expect(SUBSCRIPTION_PLANS.empresa.price_cents).toBe(6700);
+  });
+
+  test('Essencial plan has email support and NO whatsapp support', () => {
+    expect(canAccessFeature('email_support', 'usuario@empresa.com', 'essencial')).toBe(true);
+    expect(canAccessFeature('whatsapp_support', 'usuario@empresa.com', 'essencial')).toBe(false);
+    expect(canAccessFeature('quotes', 'usuario@empresa.com', 'essencial')).toBe(false);
+    expect(canAccessFeature('teams', 'usuario@empresa.com', 'essencial')).toBe(false);
+  });
+
+  test('Profissional plan includes WhatsApp support and Work Orders', () => {
+    expect(canAccessFeature('whatsapp_support', 'usuario@empresa.com', 'profissional')).toBe(true);
+    expect(canAccessFeature('quotes', 'usuario@empresa.com', 'profissional')).toBe(true);
+    expect(canAccessFeature('work_orders', 'usuario@empresa.com', 'profissional')).toBe(true);
+    expect(canAccessFeature('teams', 'usuario@empresa.com', 'profissional')).toBe(false);
+  });
+
+  test('Empresa plan includes all features including teams management', () => {
+    expect(canAccessFeature('whatsapp_support', 'usuario@empresa.com', 'empresa')).toBe(true);
+    expect(canAccessFeature('teams', 'usuario@empresa.com', 'empresa')).toBe(true);
+    expect(canAccessFeature('reports', 'usuario@empresa.com', 'empresa')).toBe(true);
+  });
+
+  test('Super Admin (agenciavallor01@gmail.com) bypasses all restrictions across all plans', () => {
+    expect(canAccessFeature('teams', 'agenciavallor01@gmail.com', 'essencial')).toBe(true);
+    expect(canAccessFeature('whatsapp_support', 'agenciavallor01@gmail.com', 'essencial')).toBe(true);
+    expect(canAccessFeature('quotes', 'agenciavallor01@gmail.com', 'essencial')).toBe(true);
+    expect(canAccessFeature('reports', 'agenciavallor01@gmail.com', 'essencial')).toBe(true);
   });
 });

@@ -1,0 +1,6 @@
+{
+  "name": "InstalaSaldo",
+  "description": "Micro SaaS profissional para técnicos instaladores e manutenção. Gestão completa de clientes, serviços, orçamentos, ordens de serviço e controle financeiro de sinal e saldo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,26 +1,46 @@
-# Node
+# Dependencies
 node_modules/
+.pnp/
+.pnp.js
 
-# IDE
-.vscode/
-.idea/
+# Production build outputs
+dist/
+build/
+.vercel/
 
-# OS
-.DS_Store
-Thumbs.db
+# Logs and debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
 
-# Environment
+# Environment variables & secrets (Never commit!)
 .env
 .env.local
-# Build artifacts
-/dist/
-/.dist/
-# Logs
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-# Optional files
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# Credentials & Keys
+*.pem
+*.key
+*.cert
+credentials.json
+token.json
+service-account*.json
+
+# Backups & Archives
+*.tar.gz
+*.zip
+*.bak
+
+# System & IDE
 .DS_Store
 Thumbs.db
-
-.vercel
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj

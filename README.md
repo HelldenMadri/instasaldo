@@ -1,90 +1,20 @@
-# InstalaSaldo
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-A **Progressive Web App (PWA)** for managing installation services, built with Vite, Supabase as a backend, and deployed on Vercel.
+# Run and deploy your AI Studio app
 
----
+This contains everything you need to run your app locally.
 
-## ✨ Overview
-- Front‑end: vanilla JavaScript, ES modules, Vite dev server & static‑build.
-- Backend: Supabase client (`@supabase/supabase-js`) with CRUD helpers in `src/api.js`.
-- State persistence: Supabase tables (`services`).
-- Testing: Jest unit tests covering happy paths and error handling.
-- Deployment: Vercel static‑site hosting (HTTPS, Service Worker works out‑of‑the‑box).
+View your app in AI Studio: https://ai.studio/apps/aad29ff2-90b8-4c8c-a307-143229a3ac34
 
----
+## Run Locally
 
-## 🚀 Quick start (local development)
-```bash
-# 1. Clone the repo (already done in your workspace)
-# 2. Install dependencies
-npm install
+**Prerequisites:**  Node.js
 
-# 3. Create a .env file with your Supabase credentials (copy from .env.example)
-cp .env.example .env
-#   – edit .env and paste the values you received from Supabase
 
-# 4. Run the dev server
-npm run dev
-```
-Open <http://localhost:5173> in your browser.
-
----
-
-## 📦 Build for production
-```bash
-npm run build   # creates a static site in the `dist/` folder
-```
-The output can be served by any static‑file host.
-
----
-
-## 🌐 Deploy to Vercel
-1. Install the Vercel CLI (already installed globally).
-2. Make sure you are logged in (`vercel login`).
-3. Deploy the project:
-```bash
-npx vercel --prod --yes
-```
-Vercel reads `vercel.json` (static‑build) and publishes the site.
-
-**Current production URL:** https://instalasaldo.vercel.app
-
----
-
-## 🧪 Run the test suite
-```bash
-npm test
-```
-The tests live in `src/api.test.js` and cover:
-- Successful CRUD operations.
-- Proper error propagation for each helper.
-- Edge‑case handling when Supabase returns an error.
-
----
-
-## 📂 Project structure
-```
-├─ src/                # Application source
-│   ├─ api.js          # Supabase wrapper
-│   ├─ api.test.js     # Jest tests
-│   └─ main.js         # UI entry point
-├─ .env                # Real credentials (git‑ignored)
-├─ .env.example        # Template for env vars
-├─ jest.config.cjs     # Jest configuration (ESM‑compatible)
-├─ babel.config.cjs    # Babel preset for Jest
-├─ vercel.json         # Vercel static‑build config
-├─ vite.config.js      # Vite configuration
-└─ package.json        # Scripts & dependencies
-```
-
----
-
-## 🛠️ Tips & troubleshooting
-- **`import.meta.env` vs `process.env`** – The source (`src/api.js`) uses `process.env` so Jest can access the variables via the `.env` file.
-- **Service Worker** – Works only on HTTPS (Vercel provides it automatically). For local testing use `npm run build` and serve the `dist/` folder with a static server.
-- **Lint & format** – Run `npm run lint` and `npm run format` before committing.
-
----
-
-## 📄 License
-MIT © HelldenMadri
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

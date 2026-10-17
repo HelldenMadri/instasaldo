@@ -1,6 +1,6 @@
 // src/api.js — InstalaSaldo 2.0 Micro SaaS Data & Auth Layer
 import { createClient } from '@supabase/supabase-js';
-import { toCents, validatePayment } from './money.js';
+import { toCents, validatePayment, formatBRL } from './money.js';
 
 // Supabase anon public key only (no service role in frontend)
 const DEFAULT_URL = 'https://hptaarigzvndqkhpaodp.supabase.co';
@@ -23,6 +23,106 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 export const SUPER_ADMIN_EMAIL = 'agenciavallor01@gmail.com';
+
+// -------------------------------------------------------------
+// CONFIGURAÇÃO CENTRAL DE PLANOS RECORRENTES MENSAIS (MICRO SAAS)
+// -------------------------------------------------------------
+export const SUBSCRIPTION_PLANS = {
+  essencial: {
+    id: 'essencial',
+    name: 'Essencial',
+    price_cents: 3700,
+    price_formatted: 'R$ 37,00',
+    billing_cycle: 'mensal',
+    max_users: 1,
+    max_teams: 1,
+    max_services_monthly: 50,
+    support: 'email',
+    support_label: 'Suporte exclusivo por e-mail',
+    has_whatsapp_support: false,
+    features: {
+      customers: true,
+      services: true,
+      finance_basic: true,
+      quotes: false,
+      work_orders: false,
+      maintenance: false,
+      teams: false,
+      reports: false,
+      whatsapp_support: false,
+      email_support: true,
+    },
+    description: 'Para o profissional autônomo individual. Gestão básica, financeiro e suporte exclusivamente por e-mail.',
+  },
+  profissional: {
+    id: 'profissional',
+    name: 'Profissional',
+    price_cents: 9700,
+    price_formatted: 'R$ 97,00',
+    billing_cycle: 'mensal',
+    max_users: 5,
+    max_teams: 2,
+    max_services_monthly: 200,
+    support: 'email_whatsapp',
+    support_label: 'Suporte por e-mail e WhatsApp',
+    has_whatsapp_support: true,
+    features: {
+      customers: true,
+      services: true,
+      finance_basic: true,
+      quotes: true,
+      work_orders: true,
+      maintenance: true,
+      teams: false,
+      reports: false,
+      whatsapp_support: true,
+      email_support: true,
+    },
+    description: 'Para quem atende com agilidade: inclui Orçamentos, OS com fotos e assinatura, agenda preventiva e WhatsApp.',
+  },
+  empresa: {
+    id: 'empresa',
+    name: 'Empresa',
+    price_cents: 14700,
+    price_formatted: 'R$ 147,00',
+    billing_cycle: 'mensal',
+    max_users: 15,
+    max_teams: 5,
+    max_services_monthly: 1000,
+    support: 'email_whatsapp',
+    support_label: 'Suporte prioritário por e-mail e WhatsApp',
+    has_whatsapp_support: true,
+    features: {
+      customers: true,
+      services: true,
+      finance_basic: true,
+      quotes: true,
+      work_orders: true,
+      maintenance: true,
+      teams: true,
+      reports: true,
+      whatsapp_support: true,
+      email_support: true,
+      audit: true,
+    },
+    description: 'Para empresas estruturadas: gestão completa de equipes (gerentes e instaladores), relatórios e auditoria.',
+  },
+};
+
+export function normalizePlanKey(plan) {
+  if (!plan || typeof plan !== 'string') return 'essencial';
+  const p = plan.trim().toLowerCase();
+  if (p === 'empresa' || p === 'enterprise') return 'empresa';
+  if (p === 'profissional' || p === 'equipe' || p === 'pro') return 'profissional';
+  return 'essencial';
+}
+
+export function canAccessFeature(featureKey, userEmail, currentPlan = 'essencial') {
+  if (isSuperAdmin(userEmail)) return true; // Super Admin tem acesso irrestrito
+  const key = normalizePlanKey(currentPlan);
+  const plan = SUBSCRIPTION_PLANS[key] || SUBSCRIPTION_PLANS.essencial;
+  return !!plan.features[featureKey];
+}
 
 // Safe Storage abstraction for offline resilience and tests
 const memoryStore = new Map();
@@ -196,6 +296,30 @@ export async function fetchCurrentCompany() {
     plan_id: 'solo',
     userRole: 'admin',
   };
+}
+
+export async function migrateCompanyPlan(newPlanKey) {
+  const normPlan = normalizePlanKey(newPlanKey);
+  const planInfo = SUBSCRIPTION_PLANS[normPlan];
+  if (!planInfo) throw new Error('Plano de assinatura inválido.');
+
+  const comp = await fetchCurrentCompany();
+  if (comp) {
+    comp.plan_id = normPlan;
+    safeSetStorage(LS_COMPANY, JSON.stringify(comp));
+
+    if (comp.id && comp.id !== 'empresa-solo-01') {
+      try {
+        await supabase
+          .from('companies')
+          .update({ plan_id: normPlan, updated_at: new Date().toISOString() })
+          .eq('id', comp.id);
+      } catch (e) {
+        console.warn('Sincronização remota de plano do Supabase:', e);
+      }
+    }
+  }
+  return planInfo;
 }
 
 // -------------------------------------------------------------
@@ -820,6 +944,16 @@ export async function fetchServices() {
 }
 
 export async function createService(service) {
+  const serviceType = service.service_type || service.tipo;
+  const description = service.description || service.descricao;
+
+  if (!serviceType || (serviceType !== 'Instalação' && serviceType !== 'Manutenção')) {
+    throw new Error('Selecione o tipo de serviço: Instalação ou Manutenção.');
+  }
+  if (!description || !description.trim()) {
+    throw new Error('A descrição do serviço é obrigatória.');
+  }
+
   const valorCents = toCents(service.valor_cents !== undefined ? service.valor_cents : service.valor, service.valor_cents !== undefined);
   const recebidoCents = toCents(service.recebido_cents !== undefined ? service.recebido_cents : service.valor_recebido, service.recebido_cents !== undefined);
 
@@ -831,6 +965,10 @@ export async function createService(service) {
   const record = {
     ...service,
     id: service.id || 'svc-' + Date.now().toString(36),
+    service_type: serviceType,
+    tipo: serviceType,
+    description: description.trim(),
+    descricao: description.trim(),
     valor_cents: valorCents,
     recebido_cents: recebidoCents,
     status: service.status || (check.balanceCents === 0 ? 'concluido' : 'pendente'),
@@ -854,6 +992,21 @@ export async function updateService(id, updates) {
   const svc = current.find((s) => s.id === id);
   if (!svc) throw new Error('Serviço não encontrado.');
 
+  const serviceType = updates.service_type || updates.tipo || svc.service_type || svc.tipo;
+  const description = updates.description !== undefined ? updates.description : (updates.descricao !== undefined ? updates.descricao : (svc.description || svc.descricao));
+
+  if (updates.service_type !== undefined || updates.tipo !== undefined) {
+    if (!serviceType || (serviceType !== 'Instalação' && serviceType !== 'Manutenção')) {
+      throw new Error('Selecione o tipo de serviço: Instalação ou Manutenção.');
+    }
+  }
+
+  if (updates.description !== undefined || updates.descricao !== undefined) {
+    if (!description || !description.trim()) {
+      throw new Error('A descrição do serviço é obrigatória.');
+    }
+  }
+
   const valorCents = updates.valor_cents !== undefined ? toCents(updates.valor_cents, true) : (updates.valor !== undefined ? toCents(updates.valor) : svc.valor_cents);
   const recebidoCents = updates.recebido_cents !== undefined ? toCents(updates.recebido_cents, true) : (updates.valor_recebido !== undefined ? toCents(updates.valor_recebido) : svc.recebido_cents);
 
@@ -865,6 +1018,10 @@ export async function updateService(id, updates) {
   const updatedRecord = {
     ...svc,
     ...updates,
+    service_type: serviceType,
+    tipo: serviceType,
+    description: description ? description.trim() : svc.description,
+    descricao: description ? description.trim() : svc.descricao,
     valor_cents: valorCents,
     recebido_cents: recebidoCents,
   };
@@ -1087,9 +1244,21 @@ export async function fetchAdminStats() {
   const empresasUnicas = new Set(users.map((u) => u.empresa || 'Minha Empresa')).size;
 
   const planos = {
-    Solo: users.filter((u) => !u.plano || u.plano === 'Solo' || u.plano === 'Básico').length,
-    Equipe: users.filter((u) => u.plano === 'Equipe' || u.plano === 'Pro').length,
-    Empresa: users.filter((u) => u.plano === 'Empresa' || u.plano === 'Enterprise').length,
+    Essencial: users.filter((u) => normalizePlanKey(u.plano) === 'essencial').length,
+    Profissional: users.filter((u) => normalizePlanKey(u.plano) === 'profissional').length,
+    Empresa: users.filter((u) => normalizePlanKey(u.plano) === 'empresa').length,
+  };
+
+  // Cálculo de MRR (Receita Recorrente Mensal em Centavos)
+  const mrrCents =
+    planos.Essencial * SUBSCRIPTION_PLANS.essencial.price_cents +
+    planos.Profissional * SUBSCRIPTION_PLANS.profissional.price_cents +
+    planos.Empresa * SUBSCRIPTION_PLANS.empresa.price_cents;
+
+  const receitaPorPlano = {
+    Essencial: planos.Essencial * SUBSCRIPTION_PLANS.essencial.price_cents,
+    Profissional: planos.Profissional * SUBSCRIPTION_PLANS.profissional.price_cents,
+    Empresa: planos.Empresa * SUBSCRIPTION_PLANS.empresa.price_cents,
   };
 
   return {
@@ -1097,8 +1266,14 @@ export async function fetchAdminStats() {
     totalEmpresas: empresasUnicas,
     usuariosAtivos,
     usuariosBloqueados,
-    empresasPorPlano: planos,
     assinaturasAtivas: usuariosAtivos,
+    assinaturasCanceladas: usuariosBloqueados,
+    pagamentosPendentes: 0,
+    inadimplencia: usuariosBloqueados,
+    mrr_cents: mrrCents,
+    mrr_formatted: formatBRL(mrrCents) + '/mês',
+    empresasPorPlano: planos,
+    receitaPorPlano,
   };
 }
 
@@ -1160,7 +1335,7 @@ function getInitialAdminUsers() {
       role: 'instalador',
       status: 'ativo',
       empresa: 'Solar Tech',
-      plano: 'Equipe',
+      plano: 'Profissional',
       created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
     },
     {
@@ -1170,8 +1345,18 @@ function getInitialAdminUsers() {
       role: 'gerente',
       status: 'ativo',
       empresa: 'ClimaBom',
-      plano: 'Equipe',
+      plano: 'Empresa',
       created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
+    },
+    {
+      id: 'usr-solo-03',
+      email: 'marcos.clima@gmail.com',
+      nome: 'Marcos Refrigeração',
+      role: 'admin',
+      status: 'ativo',
+      empresa: 'Marcos Ar & Refrigeração',
+      plano: 'Essencial',
+      created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
     },
   ];
 }
