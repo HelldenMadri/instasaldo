@@ -1076,6 +1076,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuthLoading(true);
     const cleanEmail = emailInput.trim().toLowerCase();
 
+    if (!passwordInput || passwordInput.trim().length === 0) {
+      setAuthLoading(false);
+      return { success: false, error: 'A senha é obrigatória para acessar o sistema.' };
+    }
+
     try {
       // 1. Tentar Supabase Auth se configurado
       if (isSupabaseConfigured() && passwordInput) {

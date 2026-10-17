@@ -32,6 +32,11 @@ export const LoginView: React.FC = () => {
       return;
     }
 
+    if (!password) {
+      setErrorMessage('Por favor, informe sua senha de acesso.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const result = await loginWithCredentials(email.trim(), password);
@@ -43,12 +48,6 @@ export const LoginView: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleQuickFill = (targetEmail: string) => {
-    setEmail(targetEmail);
-    setPassword('InstalaSaldo2026!');
-    setErrorMessage(null);
   };
 
   return (
@@ -212,38 +211,6 @@ export const LoginView: React.FC = () => {
                   </>
                 )}
               </button>
-
-              {/* Quick Fill Demo Badges */}
-              <div className="pt-4 mt-4 border-t border-slate-100 space-y-2">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block text-center">
-                  Acessos Rápidos de Demonstração
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('agenciavallor01@gmail.com')}
-                    className="p-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-left transition-all"
-                  >
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-amber-900">
-                      <span className="material-symbols-outlined text-[14px] text-amber-600">shield_person</span>
-                      <span>Super Admin</span>
-                    </div>
-                    <span className="text-[10px] text-amber-700 block truncate">agenciavallor01@...</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleQuickFill('rodrigo@climafrio.com.br')}
-                    className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-left transition-all"
-                  >
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-slate-800">
-                      <span className="material-symbols-outlined text-[14px] text-blue-600">business</span>
-                      <span>Empresa Técnica</span>
-                    </div>
-                    <span className="text-[10px] text-slate-500 block truncate">rodrigo@climafrio...</span>
-                  </button>
-                </div>
-              </div>
             </form>
           )}
 
