@@ -10,6 +10,7 @@ import { BudgetsView } from './components/BudgetsView';
 import { OrdersView } from './components/OrdersView';
 import { PlansView } from './components/PlansView';
 import { TeamView } from './components/TeamView';
+import { BtuCalculatorView } from './components/BtuCalculatorView';
 import { AuthModal } from './components/AuthModal';
 
 import { LoginView } from './components/LoginView';
@@ -129,6 +130,7 @@ const AppContent: React.FC = () => {
         {activeView === 'servicos' && <ServicesView />}
         {activeView === 'orcamentos' && <BudgetsView />}
         {activeView === 'ordens' && <OrdersView />}
+        {activeView === 'btus' && <BtuCalculatorView />}
         {activeView === 'equipe' && <TeamView />}
         {activeView === 'planos' && <PlansView />}
       </main>

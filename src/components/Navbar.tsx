@@ -28,6 +28,7 @@ export const Navbar: React.FC = () => {
     { id: 'servicos', label: 'Serviços & Saldos', icon: 'calculate' },
     { id: 'orcamentos', label: 'Orçamentos', icon: 'request_quote' },
     { id: 'ordens', label: 'Ordens (OS)', icon: 'assignment' },
+    { id: 'btus', label: 'Calculadora BTUs', icon: 'mode_fan' },
     { id: 'equipe', label: 'Equipe', icon: 'groups' },
     { id: 'planos', label: 'Assinatura', icon: 'credit_card' },
   ];
