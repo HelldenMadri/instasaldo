@@ -44,14 +44,32 @@ const SIMULATED_PAYMENTS = new Map<string, {
   pixCode: string;
 }>();
 
+function getEnvVar(key: string): string {
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key] as string;
+    }
+  } catch (e) {}
+
+  try {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+      const metaEnv = (import.meta as any).env;
+      if (metaEnv[key]) return metaEnv[key];
+      if (metaEnv[`VITE_${key}`]) return metaEnv[`VITE_${key}`];
+    }
+  } catch (e) {}
+
+  return '';
+}
+
 export class AsaasService {
   private apiKey: string;
   private environment: 'production' | 'sandbox';
   private baseUrl: string;
 
   constructor() {
-    this.apiKey = process.env.ASAAS_API_KEY || process.env.API_ASAAS_KEY || process.env.ASAAS_SANDBOX_KEY || '';
-    this.environment = (process.env.ASAAS_ENV === 'production' || this.apiKey.includes('prod')) ? 'production' : 'sandbox';
+    this.apiKey = getEnvVar('ASAAS_API_KEY') || getEnvVar('API_ASAAS_KEY') || getEnvVar('ASAAS_SANDBOX_KEY');
+    this.environment = (getEnvVar('ASAAS_ENV') === 'production' || this.apiKey.includes('prod')) ? 'production' : 'sandbox';
     this.baseUrl = this.environment === 'production' 
       ? 'https://api.asaas.com/v3' 
       : 'https://sandbox.asaas.com/v3';
