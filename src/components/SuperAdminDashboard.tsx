@@ -1375,7 +1375,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   subscribers: '485 assinantes',
                   mrr: 'R$ 17.945,00/mês',
                   badge: 'Autônomos',
-                  features: ['Suporte exclusivo por E-mail', 'Até 50 clientes ativos', 'Cadastro de serviços e saldos', 'Comprovante Pix básico'],
+                  features: ['Suporte exclusivo por E-mail', 'Até 5 clientes ativos', 'Cadastro de serviços e saldos', 'Comprovante Pix básico'],
                 },
                 {
                   tier: 'profissional',
