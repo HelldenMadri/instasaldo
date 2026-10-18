@@ -460,7 +460,9 @@ export const PlansView: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] text-slate-500 mb-1">CPF ou CNPJ (Opcional)</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                          CPF ou CNPJ do Titular
+                        </label>
                         <input
                           type="text"
                           value={cpfCnpj}
@@ -468,6 +470,9 @@ export const PlansView: React.FC = () => {
                           placeholder="000.000.000-00"
                           className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:ring-2 focus:ring-[#04122e]"
                         />
+                        <span className="text-[10px] text-slate-500 mt-1 block">
+                          Obrigatório para pagar via banco real (exigência do Banco Central).
+                        </span>
                       </div>
                       <div>
                         <label className="block text-[11px] text-slate-500 mb-1">WhatsApp de Contato</label>
@@ -571,25 +576,38 @@ export const PlansView: React.FC = () => {
                     Abra o app do seu banco, escolha <strong>Pix &gt; Pagar com QR Code</strong> ou <strong>Pix Copia e Cola</strong>. A aprovação é imediata via Webhook.
                   </p>
 
-                  {/* Simulador de Pagamento para Testes Imediatos */}
-                  {checkoutData.isSimulated && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-left">
+                  {/* Indicador de Status Asaas: Real vs Simulação */}
+                  {checkoutData.isSimulated ? (
+                    <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl space-y-2 text-left">
                       <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
-                        <span className="material-symbols-outlined text-[18px] text-amber-600">science</span>
-                        <span>Modo Simulação Asaas Ativo (Ambiente de Testes)</span>
+                        <span className="material-symbols-outlined text-[18px] text-amber-600">info</span>
+                        <span>QR Code de Simulação (Ambiente de Testes)</span>
                       </div>
-                      <p className="text-[11px] text-amber-800">
-                        Como a chave de produção ainda não foi inserida no .env, você pode simular a confirmação instantânea do pagamento agora mesmo com um clique:
+                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                        Este código é fictício para você poder testar o sistema sem precisar debitar dinheiro da sua conta bancária. O aplicativo do banco não conseguirá lê-lo. Para aprovar o teste agora mesmo, clique abaixo:
                       </p>
                       <button
                         type="button"
                         disabled={isProcessing}
                         onClick={handleSimulatePayment}
-                        className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all"
+                        className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[16px]">bolt</span>
-                        <span>{isProcessing ? 'Confirmando...' : '⚡ Simular Pagamento Pix Imediato'}</span>
+                        <span>{isProcessing ? 'Confirmando...' : '⚡ Simular Pagamento Pix Imediato (Grátis)'}</span>
                       </button>
+                      <div className="text-[10px] text-amber-700 pt-1 border-t border-amber-200">
+                        💡 <em>Deseja pagar via banco real?</em> Volte e informe seu <strong>CPF ou CNPJ</strong> para registrar a cobrança oficial no Banco Central.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-left flex items-start gap-2.5">
+                      <span className="material-symbols-outlined text-emerald-600 text-[20px] shrink-0 mt-0.5">verified_user</span>
+                      <div className="space-y-0.5 text-xs text-emerald-900">
+                        <p className="font-bold">Pix Oficial Registrado no Banco Central (Asaas)</p>
+                        <p className="text-[11px] text-emerald-700">
+                          Pode escanear ou copiar o código acima com o aplicativo do seu banco (Inter, Nubank, Itaú, Bradesco, etc.). A liberação do plano é automática assim que o Pix for recebido.
+                        </p>
+                      </div>
                     </div>
                   )}
 
