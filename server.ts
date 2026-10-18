@@ -323,6 +323,256 @@ app.get('/api/admin/audit-logs', (req: Request, res: Response) => {
 });
 
 // ============================================================================
+// ASAAS PAYMENTS & WEBHOOK INTEGRATION (SUBSCRIPTIONS, PIX & SIMULATION)
+// ============================================================================
+const ASAAS_CONFIG = {
+  apiKey: process.env.ASAAS_API_KEY || process.env.API_ASAAS_KEY || process.env.ASAAS_SANDBOX_KEY || '',
+  environment: (process.env.ASAAS_ENV === 'production' || (process.env.API_ASAAS_KEY || process.env.ASAAS_API_KEY || '').includes('prod') ? 'production' : 'sandbox') as 'production' | 'sandbox',
+  webhookToken: process.env.ASAAS_WEBHOOK_TOKEN || 'instalasaldo_webhook_secret_2026',
+};
+
+// In-memory payment ledger for active transactions
+const PAYMENT_LEDGER = new Map<string, {
+  paymentId: string;
+  companyId: string;
+  planTier: string;
+  value: number;
+  status: 'PENDING' | 'RECEIVED' | 'CONFIRMED' | 'OVERDUE';
+  createdAt: string;
+  pixPayload: string;
+  qrCodeUrl: string;
+}>();
+
+// 1. Checkout: Create Pix Subscription / Payment
+app.post('/api/asaas/checkout', async (req: Request, res: Response) => {
+  try {
+    const { companyId, planTier, planName, value, customer } = req.body;
+    if (!companyId || !planTier || !value) {
+      return res.status(400).json({ error: 'Dados incompletos para checkout.' });
+    }
+
+    const hasRealKey = Boolean(ASAAS_CONFIG.apiKey && ASAAS_CONFIG.apiKey.trim().length > 15);
+
+    if (!hasRealKey) {
+      // Realistic simulation mode
+      const paymentId = `pay_sim_${Date.now()}`;
+      const pixPayload = `00020126580014br.gov.bcb.pix0136instalasaldo-${planTier}-${paymentId}520400005303986540${value.toFixed(2).length}${value.toFixed(2)}5802BR5916AGENCIA VALLOR6009FORTALEZA62070503***6304${Math.random().toString(16).substring(2, 6).toUpperCase()}`;
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixPayload)}`;
+      const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      PAYMENT_LEDGER.set(paymentId, {
+        paymentId,
+        companyId,
+        planTier,
+        value,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+        pixPayload,
+        qrCodeUrl,
+      });
+
+      logSecurityEvent(
+        customer?.email || 'cliente',
+        'ASAAS_CHECKOUT_CREATED_SIMULATION',
+        companyId,
+        `Cobrança Pix simulada criada para o plano ${planName} (R$ ${value})`,
+        req
+      );
+
+      return res.json({
+        success: true,
+        paymentId,
+        subscriptionId: `sub_sim_${planTier}`,
+        value,
+        pixQrCode: {
+          encodedImage: qrCodeUrl,
+          payload: pixPayload,
+          expirationDate: dueDate,
+        },
+        isSimulated: true,
+        environment: 'simulation',
+        invoiceUrl: `https://sandbox.asaas.com/i/${paymentId}`,
+      });
+    }
+
+    // Call real Asaas API v3
+    const baseUrl = ASAAS_CONFIG.environment === 'production' 
+      ? 'https://api.asaas.com/v3' 
+      : 'https://sandbox.asaas.com/v3';
+
+    // 1. Create or find customer
+    let asaasCustomerId = '';
+    const searchRes = await fetch(`${baseUrl}/customers?email=${encodeURIComponent(customer.email)}`, {
+      headers: { 'access_token': ASAAS_CONFIG.apiKey, 'Content-Type': 'application/json' },
+    });
+
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      if (searchData.data && searchData.data.length > 0) {
+        asaasCustomerId = searchData.data[0].id;
+      }
+    }
+
+    if (!asaasCustomerId) {
+      const createRes = await fetch(`${baseUrl}/customers`, {
+        method: 'POST',
+        headers: { 'access_token': ASAAS_CONFIG.apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: customer.name,
+          email: customer.email,
+          cpfCnpj: (customer.cpfCnpj || '').replace(/\D/g, '') || undefined,
+          mobilePhone: (customer.phone || '').replace(/\D/g, '') || undefined,
+          externalReference: companyId,
+        }),
+      });
+      if (createRes.ok) {
+        const createdData = await createRes.json();
+        asaasCustomerId = createdData.id;
+      }
+    }
+
+    // 2. Create subscription
+    const nextDue = new Date();
+    nextDue.setDate(nextDue.getDate() + 1);
+    const subRes = await fetch(`${baseUrl}/subscriptions`, {
+      method: 'POST',
+      headers: { 'access_token': ASAAS_CONFIG.apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer: asaasCustomerId,
+        billingType: 'PIX',
+        value,
+        nextDueDate: nextDue.toISOString().split('T')[0],
+        cycle: 'MONTHLY',
+        description: `Assinatura InstalaSaldo 2.0 — Plano ${planName}`,
+        externalReference: JSON.stringify({ companyId, planTier }),
+      }),
+    });
+
+    const subData = await subRes.json();
+    const paymentsRes = await fetch(`${baseUrl}/subscriptions/${subData.id}/payments`, {
+      headers: { 'access_token': ASAAS_CONFIG.apiKey, 'Content-Type': 'application/json' },
+    });
+    const paymentsData = await paymentsRes.json();
+    const paymentId = paymentsData.data?.[0]?.id || subData.id;
+
+    // 3. Get Pix QR Code
+    const pixRes = await fetch(`${baseUrl}/payments/${paymentId}/pixQrCode`, {
+      headers: { 'access_token': ASAAS_CONFIG.apiKey, 'Content-Type': 'application/json' },
+    });
+    const pixData = await pixRes.json();
+
+    return res.json({
+      success: true,
+      paymentId,
+      subscriptionId: subData.id,
+      value,
+      pixQrCode: {
+        encodedImage: pixData.encodedImage ? `data:image/png;base64,${pixData.encodedImage}` : `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixData.payload)}`,
+        payload: pixData.payload,
+        expirationDate: pixData.expirationDate,
+      },
+      isSimulated: false,
+      environment: ASAAS_CONFIG.environment,
+      invoiceUrl: paymentsData.data?.[0]?.invoiceUrl,
+    });
+  } catch (err: any) {
+    console.error('[Asaas Checkout Error]', err);
+    res.status(500).json({ error: err.message || 'Erro no processamento do checkout.' });
+  }
+});
+
+// 2. Check Payment Status
+app.get('/api/asaas/payment-status/:paymentId', async (req: Request, res: Response) => {
+  const { paymentId } = req.params;
+  const sim = PAYMENT_LEDGER.get(paymentId);
+  if (sim) {
+    const isPaid = sim.status === 'CONFIRMED' || sim.status === 'RECEIVED';
+    return res.json({
+      paymentId,
+      status: sim.status,
+      isPaid,
+      confirmedAt: isPaid ? new Date().toISOString() : undefined,
+    });
+  }
+
+  // If real key configured, check Asaas API
+  if (ASAAS_CONFIG.apiKey) {
+    try {
+      const baseUrl = ASAAS_CONFIG.environment === 'production' ? 'https://api.asaas.com/v3' : 'https://sandbox.asaas.com/v3';
+      const r = await fetch(`${baseUrl}/payments/${paymentId}`, {
+        headers: { 'access_token': ASAAS_CONFIG.apiKey, 'Content-Type': 'application/json' },
+      });
+      if (r.ok) {
+        const p = await r.json();
+        const isPaid = p.status === 'RECEIVED' || p.status === 'CONFIRMED';
+        return res.json({ paymentId, status: p.status, isPaid, confirmedAt: p.paymentDate });
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  res.json({ paymentId, status: 'PENDING', isPaid: false });
+});
+
+// 3. Test Simulation Helper: Confirm Payment Instantly
+app.post('/api/asaas/simulate-payment', (req: Request, res: Response) => {
+  const { paymentId, companyId, planTier } = req.body;
+  const sim = PAYMENT_LEDGER.get(paymentId);
+  if (sim) {
+    sim.status = 'CONFIRMED';
+    PAYMENT_LEDGER.set(paymentId, sim);
+  }
+
+  logSecurityEvent(
+    'sistema-teste',
+    'ASAAS_PAYMENT_SIMULATED_CONFIRMED',
+    companyId || 'empresa',
+    `Pagamento simulado confirmado com sucesso para cobrança ${paymentId}`,
+    req
+  );
+
+  res.json({
+    success: true,
+    message: 'Pagamento Pix simulado confirmado com sucesso! Plano liberado.',
+    paymentId,
+    status: 'CONFIRMED',
+    isPaid: true,
+  });
+});
+
+// 4. Official Webhook: Received from Asaas
+app.post('/api/asaas/webhook', async (req: Request, res: Response) => {
+  try {
+    const token = req.headers['asaas-access-token'];
+    const event = req.body;
+    console.log(`[ASAAS WEBHOOK] Evento recebido: ${event?.event} | Cobrança: ${event?.payment?.id}`);
+
+    logSecurityEvent(
+      'asaas-webhook',
+      event?.event || 'UNKNOWN_EVENT',
+      event?.payment?.id || 'payment',
+      `Webhook recebido do Asaas: valor R$ ${event?.payment?.value}`,
+      req
+    );
+
+    if (event?.event === 'PAYMENT_RECEIVED' || event?.event === 'PAYMENT_CONFIRMED') {
+      const paymentId = event.payment?.id;
+      if (paymentId && PAYMENT_LEDGER.has(paymentId)) {
+        const item = PAYMENT_LEDGER.get(paymentId)!;
+        item.status = 'CONFIRMED';
+        PAYMENT_LEDGER.set(paymentId, item);
+      }
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (err: any) {
+    console.error('[Asaas Webhook Error]', err);
+    res.status(500).json({ error: 'Erro ao processar webhook' });
+  }
+});
+
+// ============================================================================
 // VITE DEV SERVER / STATIC PRODUCTION MOUNT
 // ============================================================================
 async function startServer() {

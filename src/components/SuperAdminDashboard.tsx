@@ -12,6 +12,7 @@ export const SuperAdminDashboard: React.FC = () => {
     companies,
     updateUserAdmin,
     toggleCompanySuspension,
+    changeCompanyPlan,
     auditLogs,
     setActiveView,
     loginAsRole,
@@ -1316,6 +1317,19 @@ export const SuperAdminDashboard: React.FC = () => {
                         <td className="py-3 px-4 font-bold text-[#006c49]">{formatCurrency(c.totalVolume)}</td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {c.planStatus !== 'ativo' && (
+                              <button
+                                onClick={() => {
+                                  changeCompanyPlan(c.id, c.plan || 'essencial');
+                                  showToast(`Plano da empresa ${c.name} liberado com sucesso pelo Super Admin!`);
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-sm transition-all"
+                                title="Ativar plano manualmente (Pix direto / autorização do Super Admin)"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">bolt</span>
+                                <span>Liberar Plano</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => setManageModalCompany(c)}
                               className="px-2.5 py-1.5 rounded-lg bg-[#04122e] hover:bg-[#1a2744] text-white text-[11px] font-bold inline-flex items-center gap-1 shadow-sm transition-all"
