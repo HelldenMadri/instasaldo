@@ -1284,6 +1284,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers((prev) =>
       prev.map((u) => (u.companyId === companyId ? { ...u, status: 'ativo' } : u))
     );
+
+    // Gera fatura quitada no histórico
+    const targetComp = companies.find((c) => c.id === companyId);
+    const newInvoice: Invoice = {
+      id: `inv-${Date.now().toString().slice(-6)}`,
+      companyId,
+      companyName: targetComp?.name || 'Minha Empresa',
+      planName: PLAN_CONFIGS[newPlan].name,
+      amount: price,
+      dueDate: new Date().toISOString().split('T')[0],
+      paidDate: new Date().toISOString().split('T')[0],
+      status: 'pago',
+      paymentMethod: 'pix',
+    };
+    setInvoices((prev) => [newInvoice, ...prev]);
+
     logAudit('CHANGE_PLAN', companyId, `Plano ativado/alterado para ${newPlan} (R$ ${price}/mês)`);
   };
 
