@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Logo } from './Logo';
 
-export const LoginView: React.FC = () => {
+interface LoginViewProps {
+  onGoToSales?: () => void;
+}
+
+export const LoginView: React.FC<LoginViewProps> = ({ onGoToSales }) => {
   const { loginWithCredentials, signupWithCredentials } = useApp();
   const [tab, setTab] = useState<'login' | 'signup' | 'forgot'>('login');
   
@@ -109,6 +113,19 @@ export const LoginView: React.FC = () => {
 
       {/* Main Container */}
       <div className="w-full max-w-md z-10 space-y-6">
+        {onGoToSales && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={onGoToSales}
+              className="inline-flex items-center gap-1.5 text-xs text-blue-200 hover:text-[#6ffbbe] font-bold transition-all cursor-pointer bg-white/10 hover:bg-white/15 px-4 py-2 rounded-full border border-white/15 shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+              <span>Ver Planos & Benefícios (Página de Vendas)</span>
+            </button>
+          </div>
+        )}
+
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex justify-center p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl">

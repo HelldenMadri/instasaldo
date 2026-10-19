@@ -13,14 +13,15 @@ import { TeamView } from './components/TeamView';
 import { BtuCalculatorView } from './components/BtuCalculatorView';
 import { AuthModal } from './components/AuthModal';
 import { UpgradeLimitModal } from './components/UpgradeLimitModal';
-
 import { LoginView } from './components/LoginView';
+import { SalesLandingPage } from './components/SalesLandingPage';
 
 const AppContent: React.FC = () => {
   const {
     isAuthenticated,
     isSuperAdmin,
     activeView,
+    setActiveView,
     isFieldAppView,
     setIsFieldAppView,
     currentUser,
@@ -30,9 +31,19 @@ const AppContent: React.FC = () => {
     importStatus,
   } = useApp();
 
-  // If not logged in, ALWAYS render the Login Screen
+  const [showSalesPage, setShowSalesPage] = React.useState(true);
+
+  // If not logged in: default to High-Converting Sales Landing Page for cold traffic
   if (!isAuthenticated) {
-    return <LoginView />;
+    if (showSalesPage) {
+      return <SalesLandingPage onGoToLogin={() => setShowSalesPage(false)} />;
+    }
+    return <LoginView onGoToSales={() => setShowSalesPage(true)} />;
+  }
+
+  // Preview Sales Page even when authenticated
+  if (activeView === 'landing') {
+    return <SalesLandingPage onGoToLogin={() => setActiveView('inicio')} />;
   }
 
   // Super Admin view ONLY rendered if user is strictly the Super Admin

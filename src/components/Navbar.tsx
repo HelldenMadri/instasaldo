@@ -225,6 +225,19 @@ export const Navbar: React.FC = () => {
 
                   <button
                     onClick={() => {
+                      setActiveView('landing');
+                      setIsFieldAppView(false);
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="w-full p-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg flex items-center gap-1.5"
+                    title="Visualizar a página de vendas de alta conversão para novos clientes"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-emerald-600">storefront</span>
+                    <span>Ver Página de Vendas</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
                       logout();
                       setIsUserMenuOpen(false);
                     }}
