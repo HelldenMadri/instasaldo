@@ -229,12 +229,23 @@ interface AppContextType {
   // Auth Controls (Development / Switching)
   switchUser: (userId: string) => void;
   loginAsRole: (role: 'superadmin' | 'empresa_admin' | 'instalador') => void;
+  // Upgrade Modal & Quota Limits
+  isUpgradeModalOpen: boolean;
+  upgradeModalReason: 'clients' | 'services' | 'general';
+  openUpgradeModal: (reason?: 'clients' | 'services' | 'general') => void;
+  closeUpgradeModal: () => void;
+  isClientsLimitReached: boolean;
+  isServicesLimitReached: boolean;
+  companyClientsCount: number;
+  maxClientsLimit: number | 'unlimited';
+  companyMonthServicesCount: number;
+  maxServicesLimit: number | 'unlimited';
   // Clients
-  addClient: (client: Omit<Client, 'id' | 'createdAt' | 'companyId'>) => Client;
+  addClient: (client: Omit<Client, 'id' | 'createdAt' | 'companyId'>) => Client | null;
   updateClient: (id: string, updates: Partial<Client>) => void;
   deleteClient: (id: string) => void;
   // Services
-  addService: (service: Omit<ServiceItem, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'pendingBalance'>) => ServiceItem;
+  addService: (service: Omit<ServiceItem, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'pendingBalance'>) => ServiceItem | null;
   updateService: (id: string, updates: Partial<ServiceItem>) => void;
   deleteService: (id: string) => void;
   // Budgets
@@ -419,6 +430,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authLoading, setAuthLoading] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  // Upgrade Limit Modal State
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState<boolean>(false);
+  const [upgradeModalReason, setUpgradeModalReason] = useState<'clients' | 'services' | 'general'>('clients');
+
+  const openUpgradeModal = (reason: 'clients' | 'services' | 'general' = 'clients') => {
+    setUpgradeModalReason(reason);
+    setIsUpgradeModalOpen(true);
+  };
+
+  const closeUpgradeModal = () => {
+    setIsUpgradeModalOpen(false);
+  };
 
   // Supabase Session Listener & Profile Hydration
   useEffect(() => {
@@ -981,6 +1005,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const currentCompany = companies.find((c) => c.id === currentUser?.companyId) || companies[0] || DEFAULT_EMPTY_COMPANY;
 
+  // Multi-tenant data isolation:
+  // SuperAdmin sees all records; normal companies only see their own records (clean/zeroed for new users)
+  const tenantClients = isSuperAdmin ? clients : clients.filter((c) => c.companyId === currentUser.companyId);
+  const tenantServices = isSuperAdmin ? services : services.filter((s) => s.companyId === currentUser.companyId);
+  const tenantBudgets = isSuperAdmin ? budgets : budgets.filter((b) => b.companyId === currentUser.companyId);
+  const tenantWorkOrders = isSuperAdmin ? workOrders : workOrders.filter((w) => w.companyId === currentUser.companyId);
+  const tenantTeamMembers = isSuperAdmin ? teamMembers : teamMembers.filter((t) => t.companyId === currentUser.companyId);
+
+  // Plan Quota Engine (Plano Essencial: até 5 clientes ativos e até 10 serviços por mês)
+  const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+  const companyMonthServices = tenantServices.filter((s) => {
+    const dateStr = s.scheduledDate || s.createdAt || '';
+    return dateStr.startsWith(currentMonthPrefix);
+  });
+
+  const currentPlanConfig = PLAN_CONFIGS[currentCompany.plan] || PLAN_CONFIGS.essencial;
+  const maxClientsLimit = currentPlanConfig.limits.maxClients;
+  const maxServicesLimit = currentPlanConfig.limits.maxOrdersPerMonth;
+
+  const isClientsLimitReached = !isSuperAdmin && maxClientsLimit !== 'unlimited' && tenantClients.length >= maxClientsLimit;
+  const isServicesLimitReached = !isSuperAdmin && maxServicesLimit !== 'unlimited' && companyMonthServices.length >= maxServicesLimit;
+
   // Security Wall: If non-superadmin attempts to open superadmin view, instantly redirect to inicio
   useEffect(() => {
     if (activeView === 'superadmin' && !isSuperAdmin) {
@@ -1027,7 +1073,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Client operations
-  const addClient = (data: Omit<Client, 'id' | 'createdAt' | 'companyId'>): Client => {
+  const addClient = (data: Omit<Client, 'id' | 'createdAt' | 'companyId'>): Client | null => {
+    if (isClientsLimitReached) {
+      openUpgradeModal('clients');
+      return null;
+    }
     const newClient: Client = {
       ...data,
       id: `cli-${Date.now()}`,
@@ -1054,7 +1104,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Service operations
   const addService = (
     data: Omit<ServiceItem, 'id' | 'createdAt' | 'updatedAt' | 'companyId' | 'pendingBalance'>
-  ): ServiceItem => {
+  ): ServiceItem | null => {
+    if (isServicesLimitReached) {
+      openUpgradeModal('services');
+      return null;
+    }
     const pendingBalance = Math.max(0, data.totalValue - data.depositValue);
     const newService: ServiceItem = {
       ...data,
@@ -1544,14 +1598,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: feedback };
   };
 
-  // Multi-tenant data isolation:
-  // SuperAdmin sees all records; normal companies only see their own records (clean/zeroed for new users)
-  const tenantClients = isSuperAdmin ? clients : clients.filter((c) => c.companyId === currentUser.companyId);
-  const tenantServices = isSuperAdmin ? services : services.filter((s) => s.companyId === currentUser.companyId);
-  const tenantBudgets = isSuperAdmin ? budgets : budgets.filter((b) => b.companyId === currentUser.companyId);
-  const tenantWorkOrders = isSuperAdmin ? workOrders : workOrders.filter((w) => w.companyId === currentUser.companyId);
-  const tenantTeamMembers = isSuperAdmin ? teamMembers : teamMembers.filter((t) => t.companyId === currentUser.companyId);
-
   return (
     <AppContext.Provider
       value={{
@@ -1585,6 +1631,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         importStatus,
         switchUser,
         loginAsRole,
+        // Upgrade & Quota limits
+        isUpgradeModalOpen,
+        upgradeModalReason,
+        openUpgradeModal,
+        closeUpgradeModal,
+        isClientsLimitReached,
+        isServicesLimitReached,
+        companyClientsCount: tenantClients.length,
+        maxClientsLimit,
+        companyMonthServicesCount: companyMonthServices.length,
+        maxServicesLimit,
         addClient,
         updateClient,
         deleteClient,

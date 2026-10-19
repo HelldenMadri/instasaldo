@@ -20,6 +20,13 @@ export const MobileFieldApp: React.FC = () => {
     setIsFieldAppView,
     currentCompany,
     logout,
+    isClientsLimitReached,
+    isServicesLimitReached,
+    companyClientsCount,
+    maxClientsLimit,
+    companyMonthServicesCount,
+    maxServicesLimit,
+    openUpgradeModal,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
@@ -83,6 +90,11 @@ export const MobileFieldApp: React.FC = () => {
 
     if (totalNum <= 0) {
       alert('Por favor, informe o valor total do serviço.');
+      return;
+    }
+
+    if (isServicesLimitReached) {
+      openUpgradeModal('services');
       return;
     }
 
@@ -698,6 +710,57 @@ export const MobileFieldApp: React.FC = () => {
               </div>
             </div>
 
+            {/* Widget de Cota do Plano Mobile */}
+            {maxServicesLimit !== 'unlimited' && (
+              <div
+                className={`p-3.5 rounded-2xl border shadow-sm flex flex-col gap-2 ${
+                  isServicesLimitReached || isClientsLimitReached
+                    ? 'bg-amber-50 border-amber-300'
+                    : 'bg-white border-slate-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-amber-700">
+                      {isServicesLimitReached || isClientsLimitReached ? 'lock' : 'speed'}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      Cota Mensal • Plano {currentCompany?.plan?.toUpperCase() || 'ESSENCIAL'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openUpgradeModal(isServicesLimitReached ? 'services' : 'clients')}
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#006c49] text-[#6cf8bb] hover:bg-[#005236] transition-colors cursor-pointer"
+                  >
+                    Upgrade PRO
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="text-[10px] text-slate-500 block">Clientes Ativos</span>
+                    <span className={`font-bold ${isClientsLimitReached ? 'text-red-600' : 'text-slate-800'}`}>
+                      {companyClientsCount}/{maxClientsLimit}
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="text-[10px] text-slate-500 block">Serviços no Mês</span>
+                    <span className={`font-bold ${isServicesLimitReached ? 'text-red-600' : 'text-slate-800'}`}>
+                      {companyMonthServicesCount}/{maxServicesLimit}
+                    </span>
+                  </div>
+                </div>
+
+                {(isServicesLimitReached || isClientsLimitReached) && (
+                  <p className="text-[10px] text-amber-900 font-semibold flex items-center gap-1 pt-0.5">
+                    <span className="material-symbols-outlined text-[13px] text-red-600">warning</span>
+                    Limite atingido. Faça o upgrade para continuar cadastrando.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Ações Rápidas de Campo (Grid 2x3 Completo) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
@@ -711,15 +774,33 @@ export const MobileFieldApp: React.FC = () => {
                 {/* 1. Novo Serviço */}
                 <button
                   type="button"
-                  onClick={() => setActiveTab('novo-servico')}
-                  className="p-3 bg-white border border-slate-200/90 rounded-2xl shadow-sm flex items-center gap-2.5 text-left hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                  onClick={() => {
+                    if (isServicesLimitReached) {
+                      openUpgradeModal('services');
+                      return;
+                    }
+                    setActiveTab('novo-servico');
+                  }}
+                  className={`p-3 border rounded-2xl shadow-sm flex items-center gap-2.5 text-left active:scale-95 transition-all cursor-pointer ${
+                    isServicesLimitReached
+                      ? 'bg-amber-50/70 border-amber-300 hover:bg-amber-100'
+                      : 'bg-white border-slate-200/90 hover:bg-slate-50'
+                  }`}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[22px]">add_circle</span>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    isServicesLimitReached ? 'bg-amber-500 text-white' : 'bg-blue-50 text-[#04122e]'
+                  }`}>
+                    <span className="material-symbols-outlined text-[22px]">
+                      {isServicesLimitReached ? 'lock' : 'add_circle'}
+                    </span>
                   </div>
                   <div className="min-w-0">
-                    <span className="font-bold text-xs text-slate-900 block truncate">Novo Serviço</span>
-                    <span className="text-[10px] text-slate-500 block truncate">Lançar sinal</span>
+                    <span className="font-bold text-xs text-slate-900 block truncate">
+                      {isServicesLimitReached ? 'Limite Mês' : 'Novo Serviço'}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block truncate">
+                      {isServicesLimitReached ? 'Faça Upgrade' : 'Lançar sinal'}
+                    </span>
                   </div>
                 </button>
 
@@ -854,11 +935,23 @@ export const MobileFieldApp: React.FC = () => {
                 Clientes Cadastrados ({clients.length})
               </h2>
               <button
-                onClick={() => setActiveView('clientes')}
-                className="px-2.5 py-1 text-xs bg-[#04122e] text-white font-bold rounded-lg flex items-center gap-1"
+                onClick={() => {
+                  if (isClientsLimitReached) {
+                    openUpgradeModal('clients');
+                    return;
+                  }
+                  setActiveView('clientes');
+                }}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg flex items-center gap-1 cursor-pointer ${
+                  isClientsLimitReached
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-[#04122e] hover:bg-[#1a2744] text-white'
+                }`}
               >
-                <span className="material-symbols-outlined text-[16px]">add</span>
-                Novo
+                <span className="material-symbols-outlined text-[16px]">
+                  {isClientsLimitReached ? 'lock' : 'add'}
+                </span>
+                {isClientsLimitReached ? 'Upgrade' : 'Novo'}
               </button>
             </div>
 

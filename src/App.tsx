@@ -12,6 +12,7 @@ import { PlansView } from './components/PlansView';
 import { TeamView } from './components/TeamView';
 import { BtuCalculatorView } from './components/BtuCalculatorView';
 import { AuthModal } from './components/AuthModal';
+import { UpgradeLimitModal } from './components/UpgradeLimitModal';
 
 import { LoginView } from './components/LoginView';
 
@@ -115,6 +116,8 @@ const AppContent: React.FC = () => {
         <div className="w-full max-w-md shadow-2xl rounded-3xl overflow-hidden ring-8 ring-slate-800">
           <MobileFieldApp />
         </div>
+
+        <UpgradeLimitModal />
       </div>
     );
   }
@@ -134,6 +137,9 @@ const AppContent: React.FC = () => {
         {activeView === 'equipe' && <TeamView />}
         {activeView === 'planos' && <PlansView />}
       </main>
+
+      {/* Upgrade Limit Paywall Modal */}
+      <UpgradeLimitModal />
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-6 px-4 sm:px-6 w-full">

@@ -4,7 +4,20 @@ import { ServiceItem, ServiceType, ServiceStatus } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
 
 export const ServicesView: React.FC = () => {
-  const { services, clients, addService, updateService, deleteService, currentUser } = useApp();
+  const {
+    services,
+    clients,
+    addService,
+    updateService,
+    deleteService,
+    currentUser,
+    currentCompany,
+    isServicesLimitReached,
+    companyMonthServicesCount,
+    maxServicesLimit,
+    openUpgradeModal,
+    setActiveView,
+  } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | ServiceType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | ServiceStatus>('all');
@@ -29,6 +42,10 @@ export const ServicesView: React.FC = () => {
   const totalPending = services.reduce((acc, s) => acc + s.pendingBalance, 0);
 
   const openCreateModal = () => {
+    if (isServicesLimitReached) {
+      openUpgradeModal('services');
+      return;
+    }
     setEditingService(null);
     setClientId(clients[0]?.id || '');
     setServiceType('instalacao');
@@ -80,6 +97,10 @@ export const ServicesView: React.FC = () => {
         notes,
       });
     } else {
+      if (isServicesLimitReached) {
+        openUpgradeModal('services');
+        return;
+      }
       addService({
         clientId: selectedClient?.id || clientId,
         clientName: selectedClient?.name || 'Cliente',
@@ -122,12 +143,92 @@ export const ServicesView: React.FC = () => {
 
         <button
           onClick={openCreateModal}
-          className="h-11 px-5 bg-[#04122e] hover:bg-[#1a2744] text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 self-start sm:self-auto"
+          className={`h-11 px-5 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 self-start sm:self-auto cursor-pointer ${
+            isServicesLimitReached
+              ? 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 ring-2 ring-amber-300'
+              : 'bg-[#04122e] hover:bg-[#1a2744]'
+          }`}
         >
-          <span className="material-symbols-outlined text-[18px]">add_circle</span>
-          <span>Cadastrar Serviço & Saldo</span>
+          <span className="material-symbols-outlined text-[18px]">
+            {isServicesLimitReached ? 'lock' : 'add_circle'}
+          </span>
+          <span>{isServicesLimitReached ? 'Limite Mensal Atingido (Fazer Upgrade)' : 'Cadastrar Serviço & Saldo'}</span>
         </button>
       </div>
+
+      {/* Quota Indicator Banner for Limited Plans (Essencial) */}
+      {maxServicesLimit !== 'unlimited' && (
+        <div
+          className={`p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border shadow-sm transition-all ${
+            isServicesLimitReached
+              ? 'bg-amber-50 border-amber-300 text-amber-950'
+              : 'bg-white border-slate-200 text-slate-700'
+          }`}
+        >
+          <div className="flex items-center gap-3.5">
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                isServicesLimitReached
+                  ? 'bg-amber-500 text-white animate-pulse'
+                  : 'bg-[#04122e] text-[#6cf8bb]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[22px]">
+                {isServicesLimitReached ? 'lock' : 'calendar_month'}
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Cota Mensal • Plano {currentCompany.plan.toUpperCase()}
+                </span>
+                {isServicesLimitReached && (
+                  <span className="bg-red-100 text-red-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Limite 100% Atingido
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-bold text-slate-800">
+                {companyMonthServicesCount} de {maxServicesLimit} serviços realizados neste mês ({Math.min(100, Math.round((companyMonthServicesCount / Number(maxServicesLimit)) * 100))}%)
+              </p>
+              <div className="w-48 bg-slate-200 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    isServicesLimitReached ? 'bg-red-500 w-full' : 'bg-emerald-500'
+                  }`}
+                  style={{
+                    width: isServicesLimitReached
+                      ? '100%'
+                      : `${Math.min(100, (companyMonthServicesCount / Number(maxServicesLimit)) * 100)}%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {isServicesLimitReached ? (
+              <button
+                type="button"
+                onClick={() => openUpgradeModal('services')}
+                className="px-4 py-2.5 bg-gradient-to-r from-[#006c49] to-[#04122e] hover:from-[#005236] hover:to-[#1a2744] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px] text-[#6cf8bb]">rocket_launch</span>
+                <span>Fazer Upgrade para Profissional (120 serviços/mês)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setActiveView('planos')}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[15px]">upgrade</span>
+                <span>Ver Planos</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Financial Overview 3-Card Strip */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

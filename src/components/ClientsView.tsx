@@ -4,7 +4,19 @@ import { Client } from '../types';
 import { formatPhone, formatDocument } from '../utils/formatters';
 
 export const ClientsView: React.FC = () => {
-  const { clients, addClient, updateClient, deleteClient, services } = useApp();
+  const {
+    clients,
+    addClient,
+    updateClient,
+    deleteClient,
+    services,
+    currentCompany,
+    isClientsLimitReached,
+    companyClientsCount,
+    maxClientsLimit,
+    openUpgradeModal,
+    setActiveView,
+  } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -21,6 +33,10 @@ export const ClientsView: React.FC = () => {
   const [notes, setNotes] = useState('');
 
   const openCreateModal = () => {
+    if (isClientsLimitReached) {
+      openUpgradeModal('clients');
+      return;
+    }
     setEditingClient(null);
     setName('');
     setPhone('');
@@ -65,6 +81,10 @@ export const ClientsView: React.FC = () => {
         notes,
       });
     } else {
+      if (isClientsLimitReached) {
+        openUpgradeModal('clients');
+        return;
+      }
       addClient({
         name,
         phone,
@@ -104,12 +124,92 @@ export const ClientsView: React.FC = () => {
 
         <button
           onClick={openCreateModal}
-          className="h-11 px-5 bg-[#04122e] hover:bg-[#1a2744] text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 self-start sm:self-auto"
+          className={`h-11 px-5 text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 self-start sm:self-auto cursor-pointer ${
+            isClientsLimitReached
+              ? 'bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 ring-2 ring-amber-300'
+              : 'bg-[#04122e] hover:bg-[#1a2744]'
+          }`}
         >
-          <span className="material-symbols-outlined text-[18px]">person_add</span>
-          <span>Novo Cliente</span>
+          <span className="material-symbols-outlined text-[18px]">
+            {isClientsLimitReached ? 'lock' : 'person_add'}
+          </span>
+          <span>{isClientsLimitReached ? 'Limite Atingido (Fazer Upgrade)' : 'Novo Cliente'}</span>
         </button>
       </div>
+
+      {/* Quota Indicator Banner for Limited Plans (Essencial) */}
+      {maxClientsLimit !== 'unlimited' && (
+        <div
+          className={`p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border shadow-sm transition-all ${
+            isClientsLimitReached
+              ? 'bg-amber-50 border-amber-300 text-amber-950'
+              : 'bg-white border-slate-200 text-slate-700'
+          }`}
+        >
+          <div className="flex items-center gap-3.5">
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                isClientsLimitReached
+                  ? 'bg-amber-500 text-white animate-pulse'
+                  : 'bg-[#04122e] text-[#6cf8bb]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[22px]">
+                {isClientsLimitReached ? 'lock' : 'groups'}
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Cota do Plano {currentCompany.plan.toUpperCase()}
+                </span>
+                {isClientsLimitReached && (
+                  <span className="bg-red-100 text-red-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Limite 100% Atingido
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-bold text-slate-800">
+                {companyClientsCount} de {maxClientsLimit} clientes ativos cadastrados ({Math.min(100, Math.round((companyClientsCount / Number(maxClientsLimit)) * 100))}%)
+              </p>
+              <div className="w-48 bg-slate-200 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    isClientsLimitReached ? 'bg-red-500 w-full' : 'bg-emerald-500'
+                  }`}
+                  style={{
+                    width: isClientsLimitReached
+                      ? '100%'
+                      : `${Math.min(100, (companyClientsCount / Number(maxClientsLimit)) * 100)}%`,
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {isClientsLimitReached ? (
+              <button
+                type="button"
+                onClick={() => openUpgradeModal('clients')}
+                className="px-4 py-2.5 bg-gradient-to-r from-[#006c49] to-[#04122e] hover:from-[#005236] hover:to-[#1a2744] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px] text-[#6cf8bb]">rocket_launch</span>
+                <span>Fazer Upgrade para Profissional (250 clientes)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setActiveView('planos')}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[15px]">upgrade</span>
+                <span>Ver Planos</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between gap-4">
