@@ -52,8 +52,15 @@ export function asaasDevPlugin(): Plugin {
           const cleanCpfCnpj = (customer?.cpfCnpj || '').replace(/\D/g, '');
           const hasRealKey = Boolean(ASAAS_KEY && ASAAS_KEY.length > 15);
 
-          // Se não tiver chave real OU o usuário não informou CPF/CNPJ, gera modo simulação seguro
-          if (!hasRealKey || cleanCpfCnpj.length < 11) {
+          // Se tiver chave real do Asaas configurada, CPF/CNPJ é obrigatório para gerar o Pix oficial no BACEN
+          if (hasRealKey && cleanCpfCnpj.length < 11) {
+            return sendJson(400, {
+              error: 'O CPF ou CNPJ do titular é obrigatório para registrar a cobrança Pix oficial no Banco Central (Asaas).',
+            });
+          }
+
+          // Se não tiver chave real configurada, entra em modo simulação de desenvolvimento
+          if (!hasRealKey) {
             const paymentId = `pay_sim_${Date.now()}`;
             const pixPayload = `00020126580014br.gov.bcb.pix0136instalasaldo-${planTier}-${paymentId}520400005303986540${value?.toFixed(2).length || 5}${value?.toFixed(2) || '97.00'}5802BR5916AGENCIA VALLOR6009FORTALEZA62070503***6304${Math.random().toString(16).substring(2, 6).toUpperCase()}`;
             const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(pixPayload)}`;
@@ -205,7 +212,15 @@ export function asaasDevPlugin(): Plugin {
         // 3. POST /api/asaas/simulate-payment
         if (url === '/api/asaas/simulate-payment' && req.method === 'POST') {
           const body = await readBody();
-          const { paymentId } = body;
+          const { paymentId, userEmail } = body;
+
+          // Em produção ou com chave Asaas real ativada, bloqueia simulação para usuários comuns
+          if (hasRealKey && ASAAS_ENV === 'production' && userEmail !== 'agenciavallor01@gmail.com') {
+            return sendJson(403, {
+              error: 'A simulação de pagamentos está desativada em ambiente de produção. Conclua o pagamento escaneando o Pix oficial do Banco Central pelo app do seu banco.',
+            });
+          }
+
           if (paymentId) {
             const sim = SIMULATED_PAYMENTS.get(paymentId);
             if (sim) {

@@ -46,22 +46,30 @@ create table if not exists public.plans (
   price_cents integer not null default 0,
   max_users integer not null default 1,
   max_teams integer not null default 1,
+  max_clients integer not null default 5,
+  max_monthly_services integer not null default 10,
   features jsonb default '{}'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-insert into public.plans (id, name, price_cents, max_users, max_teams, features)
+-- Garante colunas de cota caso a tabela plans já existisse
+alter table public.plans add column if not exists max_clients integer default 5;
+alter table public.plans add column if not exists max_monthly_services integer default 10;
+
+insert into public.plans (id, name, price_cents, max_users, max_teams, max_clients, max_monthly_services, features)
 values 
-  ('essencial', 'Essencial', 3700, 1, 1, '{"billing": "mensal", "email_support": true, "whatsapp_support": false, "quotes": false, "os": false, "teams": false}'::jsonb),
-  ('profissional', 'Profissional', 9700, 5, 2, '{"billing": "mensal", "email_support": true, "whatsapp_support": true, "quotes": true, "os": true, "maintenance": true, "teams": false}'::jsonb),
-  ('empresa', 'Empresa', 14700, 15, 5, '{"billing": "mensal", "email_support": true, "whatsapp_support": true, "quotes": true, "os": true, "maintenance": true, "teams": true, "reports": true, "audit": true}'::jsonb),
-  ('solo', 'Essencial', 3700, 1, 1, '{"billing": "mensal", "email_support": true, "whatsapp_support": false}'::jsonb),
-  ('equipe', 'Profissional', 9700, 5, 2, '{"billing": "mensal", "email_support": true, "whatsapp_support": true}'::jsonb)
+  ('essencial', 'Essencial', 3700, 1, 1, 5, 10, '{"billing": "mensal", "email_support": true, "whatsapp_support": false, "quotes": false, "os": false, "teams": false}'::jsonb),
+  ('profissional', 'Profissional', 9700, 5, 2, 50, 120, '{"billing": "mensal", "email_support": true, "whatsapp_support": true, "quotes": true, "os": true, "maintenance": true, "teams": false}'::jsonb),
+  ('empresa', 'Empresa', 14700, 15, 5, 999999, 999999, '{"billing": "mensal", "email_support": true, "whatsapp_support": true, "quotes": true, "os": true, "maintenance": true, "teams": true, "reports": true, "audit": true}'::jsonb),
+  ('solo', 'Essencial', 3700, 1, 1, 5, 10, '{"billing": "mensal", "email_support": true, "whatsapp_support": false}'::jsonb),
+  ('equipe', 'Profissional', 9700, 5, 2, 50, 120, '{"billing": "mensal", "email_support": true, "whatsapp_support": true}'::jsonb)
 on conflict (id) do update set
   name = excluded.name,
   price_cents = excluded.price_cents,
   max_users = excluded.max_users,
   max_teams = excluded.max_teams,
+  max_clients = excluded.max_clients,
+  max_monthly_services = excluded.max_monthly_services,
   features = excluded.features;
 
 -- ------------------------------------------------------------------------------
@@ -270,6 +278,60 @@ drop policy if exists "Clientes criados e editados por membros da empresa" on pu
 create policy "Clientes criados e editados por membros da empresa"
   on public.customers for all
   using (company_id = public.current_company_id() or public.is_super_admin());
+
+-- Quota Trigger: Impede cadastro além do limite do plano da empresa
+create or replace function public.check_customer_quota()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_plan_id text;
+  v_max_clients integer;
+  v_current_clients integer;
+begin
+  -- Super admin bypass
+  if public.is_super_admin() then
+    return new;
+  end if;
+
+  if new.company_id is null then
+    new.company_id := public.current_company_id();
+  end if;
+
+  -- Localiza plano da empresa
+  select coalesce(plan_id, 'essencial') into v_plan_id
+  from public.companies
+  where id = new.company_id;
+
+  -- Localiza limite de clientes
+  select coalesce(max_clients, 5) into v_max_clients
+  from public.plans
+  where id = v_plan_id;
+
+  if v_max_clients is null then
+    v_max_clients := 5;
+  end if;
+
+  -- Conta clientes ativos cadastrados
+  select count(*) into v_current_clients
+  from public.customers
+  where company_id = new.company_id
+    and status != 'Inativo';
+
+  if v_current_clients >= v_max_clients then
+    raise exception 'LIMITE_PLANO_ATINGIDO: Você atingiu o limite de % clientes cadastrados do seu plano atual (%). Faça upgrade para continuar cadastrando novos clientes.', v_max_clients, v_plan_id;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_check_customer_quota on public.customers;
+create trigger trg_check_customer_quota
+  before insert on public.customers
+  for each row execute procedure public.check_customer_quota();
 
 -- ------------------------------------------------------------------------------
 -- 9. TABELAS: quotes & quote_items (Orçamentos)
@@ -609,6 +671,60 @@ create policy "Servicos gerenciaveis por admin e gerente"
     or user_id = auth.uid()
     or public.is_super_admin()
   );
+
+-- Quota Trigger: Impede cadastro de serviços acima do limite mensal do plano
+create or replace function public.check_service_monthly_quota()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_plan_id text;
+  v_max_services integer;
+  v_current_services integer;
+begin
+  -- Super admin bypass
+  if public.is_super_admin() then
+    return new;
+  end if;
+
+  if new.company_id is null then
+    new.company_id := public.current_company_id();
+  end if;
+
+  -- Localiza plano da empresa
+  select coalesce(plan_id, 'essencial') into v_plan_id
+  from public.companies
+  where id = new.company_id;
+
+  -- Localiza limite de serviços mensais
+  select coalesce(max_monthly_services, 10) into v_max_services
+  from public.plans
+  where id = v_plan_id;
+
+  if v_max_services is null then
+    v_max_services := 10;
+  end if;
+
+  -- Conta serviços criados no mês corrente
+  select count(*) into v_current_services
+  from public.services
+  where company_id = new.company_id
+    and date_trunc('month', created_at) = date_trunc('month', now());
+
+  if v_current_services >= v_max_services then
+    raise exception 'LIMITE_PLANO_ATINGIDO: Você atingiu o limite de % serviços por mês do seu plano atual (%). Faça upgrade para continuar lançando novos serviços.', v_max_services, v_plan_id;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_check_service_monthly_quota on public.services;
+create trigger trg_check_service_monthly_quota
+  before insert on public.services
+  for each row execute procedure public.check_service_monthly_quota();
 
 -- ------------------------------------------------------------------------------
 -- 14. TABELA: audit_logs (Auditoria Geral)

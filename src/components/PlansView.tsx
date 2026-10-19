@@ -10,7 +10,7 @@ import {
 } from '../services/asaas';
 
 export const PlansView: React.FC = () => {
-  const { currentCompany, changeCompanyPlan, invoices, currentUser } = useApp();
+  const { currentCompany, changeCompanyPlan, invoices, currentUser, isSuperAdmin } = useApp();
   const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<PlanTier | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cartao'>('pix');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -54,6 +54,14 @@ export const PlansView: React.FC = () => {
   // Função para gerar a cobrança no Asaas
   const handleGeneratePix = async () => {
     if (!selectedPlanForCheckout) return;
+
+    // Em produção ou para usuários normais, valida se CPF/CNPJ foi informado
+    const cleanDoc = cpfCnpj.replace(/\D/g, '');
+    if (!isSuperAdmin && cleanDoc.length !== 11 && cleanDoc.length !== 14) {
+      alert('Por favor, informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido para registrar a cobrança Pix oficial no Banco Central via Asaas.');
+      return;
+    }
+
     setIsGeneratingPix(true);
 
     try {
@@ -79,7 +87,7 @@ export const PlansView: React.FC = () => {
     }
   };
 
-  // Função para simular confirmação imediata (Modo Teste / Sandbox)
+  // Função para simular confirmação imediata (Modo Teste / Sandbox / Super Admin)
   const handleSimulatePayment = async () => {
     if (!checkoutData?.paymentId || !selectedPlanForCheckout) return;
     setIsProcessing(true);
@@ -89,6 +97,7 @@ export const PlansView: React.FC = () => {
         paymentId: checkoutData.paymentId,
         companyId: currentCompany.id,
         planTier: selectedPlanForCheckout,
+        userEmail: currentUser.email,
       });
 
       setCheckoutSuccess(true);
@@ -99,8 +108,8 @@ export const PlansView: React.FC = () => {
         setSelectedPlanForCheckout(null);
         setCheckoutData(null);
       }, 2000);
-    } catch (err) {
-      alert('Erro ao simular pagamento.');
+    } catch (err: any) {
+      alert(err.message || 'Erro ao simular pagamento.');
     } finally {
       setIsProcessing(false);
     }
@@ -577,14 +586,14 @@ export const PlansView: React.FC = () => {
                   </p>
 
                   {/* Indicador de Status Asaas: Real vs Simulação */}
-                  {checkoutData.isSimulated ? (
+                  {checkoutData.isSimulated && (!import.meta.env.PROD || isSuperAdmin) ? (
                     <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl space-y-2 text-left">
                       <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
                         <span className="material-symbols-outlined text-[18px] text-amber-600">info</span>
-                        <span>QR Code de Simulação (Ambiente de Testes)</span>
+                        <span>QR Code de Simulação (Ambiente de Testes / Super Admin)</span>
                       </div>
                       <p className="text-[11px] text-amber-800 leading-relaxed">
-                        Este código é fictício para você poder testar o sistema sem precisar debitar dinheiro da sua conta bancária. O aplicativo do banco não conseguirá lê-lo. Para aprovar o teste agora mesmo, clique abaixo:
+                        Este código é fictício para testes sem debitar dinheiro real da conta bancária. O aplicativo do banco não conseguirá lê-lo. Para aprovar o teste agora mesmo, clique abaixo:
                       </p>
                       <button
                         type="button"
@@ -593,11 +602,8 @@ export const PlansView: React.FC = () => {
                         className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[16px]">bolt</span>
-                        <span>{isProcessing ? 'Confirmando...' : '⚡ Simular Pagamento Pix Imediato (Grátis)'}</span>
+                        <span>{isProcessing ? 'Confirmando...' : '⚡ Simular Pagamento Pix Imediato (Super Admin)'}</span>
                       </button>
-                      <div className="text-[10px] text-amber-700 pt-1 border-t border-amber-200">
-                        💡 <em>Deseja pagar via banco real?</em> Volte e informe seu <strong>CPF ou CNPJ</strong> para registrar a cobrança oficial no Banco Central.
-                      </div>
                     </div>
                   ) : (
                     <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-left flex items-start gap-2.5">
@@ -605,7 +611,7 @@ export const PlansView: React.FC = () => {
                       <div className="space-y-0.5 text-xs text-emerald-900">
                         <p className="font-bold">Pix Oficial Registrado no Banco Central (Asaas)</p>
                         <p className="text-[11px] text-emerald-700">
-                          Pode escanear ou copiar o código acima com o aplicativo do seu banco (Inter, Nubank, Itaú, Bradesco, etc.). A liberação do plano é automática assim que o Pix for recebido.
+                          Pode escanear ou copiar o código acima com o aplicativo do seu banco (Inter, Nubank, Itaú, Bradesco, etc.). A liberação do plano é automática e instantânea assim que o Pix for recebido.
                         </p>
                       </div>
                     </div>

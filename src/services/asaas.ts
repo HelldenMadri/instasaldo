@@ -447,6 +447,7 @@ export async function triggerSimulatedPayment(params: {
   paymentId: string;
   companyId: string;
   planTier: string;
+  userEmail?: string;
 }): Promise<{ success: boolean; message: string }> {
   try {
     const res = await fetch('/api/asaas/simulate-payment', {
@@ -457,9 +458,16 @@ export async function triggerSimulatedPayment(params: {
 
     if (res.ok) {
       return await res.json();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      if (err.error) {
+        throw new Error(err.error);
+      }
     }
-  } catch (err) {
-    // Fallback
+  } catch (err: any) {
+    if (err.message && err.message.includes('desativada em ambiente de produção')) {
+      throw err;
+    }
   }
 
   asaasService.simulatePaymentConfirmation(params.paymentId);
