@@ -3,6 +3,11 @@ import { useApp } from '../context/AppContext';
 import { ServiceType, ServiceStatus } from '../types';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { Logo } from './Logo';
+import { BtuCalculatorView } from './BtuCalculatorView';
+import { OrdersView } from './OrdersView';
+import { BudgetsView } from './BudgetsView';
+import { PlansView } from './PlansView';
+import { TeamView } from './TeamView';
 
 export const MobileFieldApp: React.FC = () => {
   const {
@@ -12,9 +17,15 @@ export const MobileFieldApp: React.FC = () => {
     currentUser,
     workOrders,
     setActiveView,
+    setIsFieldAppView,
+    currentCompany,
+    logout,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'inicio' | 'clientes' | 'servicos' | 'agenda' | 'novo-servico'>('novo-servico');
+  const [activeTab, setActiveTab] = useState<
+    'inicio' | 'clientes' | 'servicos' | 'agenda' | 'novo-servico' | 'btus' | 'ordens' | 'orcamentos' | 'planos' | 'equipe'
+  >('inicio');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // Novo Serviço Form State (matching Image 5 defaults)
   const [selectedClientName, setSelectedClientName] = useState<string>('Marcos Silveira Rezende');
@@ -131,23 +142,141 @@ export const MobileFieldApp: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               aria-label="Notificações"
               onClick={() => alert('Sistemas de notificações push e lembretes de saldo ativos.')}
-              className="relative w-10 h-10 flex items-center justify-center rounded-full text-[#0b1c30] hover:bg-slate-200 transition-colors"
+              className="relative w-9 h-9 flex items-center justify-center rounded-full text-[#0b1c30] hover:bg-slate-200 transition-colors"
             >
-              <span className="material-symbols-outlined text-[22px]">notifications</span>
-              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-600 rounded-full ring-2 ring-white"></span>
+              <span className="material-symbols-outlined text-[20px]">notifications</span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full ring-2 ring-white"></span>
             </button>
-            <div className="w-10 h-10 flex items-center justify-center">
-              <div className="w-8 h-8 rounded-full bg-[#1a2744] text-white flex items-center justify-center font-bold text-xs ring-2 ring-blue-200 shadow-sm">
-                RS
-              </div>
-            </div>
+            
+            {/* Botão Menu no Canto Direito para Abrir Todas as Páginas */}
+            <button
+              type="button"
+              onClick={() => setIsDrawerOpen(true)}
+              className="h-9 px-3 rounded-xl bg-[#04122e] hover:bg-[#1a2744] text-white flex items-center gap-1.5 text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer"
+              title="Abrir Todas as Páginas"
+            >
+              <span className="material-symbols-outlined text-[19px]">menu</span>
+              <span>Menu</span>
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Slide-out Navigation Drawer for Mobile (Menu Lateral) */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white w-5/6 max-w-xs h-full flex flex-col shadow-2xl border-l border-slate-200 animate-slide-left">
+            {/* Drawer Header */}
+            <div className="bg-[#04122e] text-white p-5 flex items-center justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Logo size="sm" iconOnly />
+                  <span className="font-headline font-bold text-sm truncate">
+                    {currentCompany?.name || 'InstalaSaldo'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] bg-emerald-500/20 text-[#6ffbbe] font-bold px-2 py-0.5 rounded-full capitalize">
+                    Plano {currentCompany?.plan || 'Essencial'}
+                  </span>
+                  <span className="text-[11px] text-blue-200 truncate">
+                    {currentUser?.name}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            {/* Drawer Navigation Links */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-2 pb-1">
+                Todas as Páginas
+              </span>
+
+              {[
+                { id: 'inicio', label: 'Início (Dashboard)', icon: 'home', color: 'text-blue-600' },
+                { id: 'btus', label: 'Calculadora de BTUs', icon: 'mode_fan', color: 'text-emerald-600', badge: 'Novo' },
+                { id: 'ordens', label: 'Ordens de Serviço (OS)', icon: 'assignment', color: 'text-indigo-600' },
+                { id: 'orcamentos', label: 'Orçamentos & Propostas', icon: 'request_quote', color: 'text-purple-600' },
+                { id: 'servicos', label: 'Serviços & Saldos', icon: 'calculate', color: 'text-teal-600' },
+                { id: 'clientes', label: 'Meus Clientes', icon: 'group', color: 'text-amber-600' },
+                { id: 'agenda', label: 'Agenda de Campo', icon: 'calendar_month', color: 'text-blue-500' },
+                { id: 'novo-servico', label: 'Cadastrar Novo Serviço', icon: 'add_circle', color: 'text-emerald-500' },
+                { id: 'equipe', label: 'Equipe & Técnicos', icon: 'groups', color: 'text-slate-600' },
+                { id: 'planos', label: 'Planos & Assinatura', icon: 'credit_card', color: 'text-blue-700' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(item.id as any);
+                    setIsDrawerOpen(false);
+                  }}
+                  className={`w-full p-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
+                    activeTab === item.id
+                      ? 'bg-blue-50 text-[#04122e] font-bold shadow-sm'
+                      : 'hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`material-symbols-outlined text-[20px] ${item.color}`}>
+                      {item.icon}
+                    </span>
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+
+              <div className="pt-3 pb-1 border-t border-slate-100 my-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-2 pb-1">
+                  Modo de Exibição
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFieldAppView(false);
+                    setIsDrawerOpen(false);
+                  }}
+                  className="w-full p-2.5 rounded-xl text-left text-xs font-bold text-[#04122e] bg-slate-100 hover:bg-slate-200 flex items-center gap-2.5 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[20px]">desktop_windows</span>
+                  <span>Alternar para Painel Web</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  setIsDrawerOpen(false);
+                }}
+                className="w-full p-2.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">logout</span>
+                <span>Sair da Conta</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col w-full">
@@ -569,33 +698,109 @@ export const MobileFieldApp: React.FC = () => {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setActiveTab('novo-servico')}
-                className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center gap-2.5 text-left hover:bg-slate-50 transition-colors"
-              >
-                <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                </div>
-                <div>
-                  <span className="font-bold text-xs text-slate-900 block leading-tight">Novo Serviço</span>
-                  <span className="text-[10px] text-slate-500">Lançar sinal</span>
-                </div>
-              </button>
+            {/* Ações Rápidas de Campo (Grid 2x3 Completo) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Ações Rápidas de Campo
+                </span>
+                <span className="text-[11px] text-slate-400">Atalhos</span>
+              </div>
 
-              <button
-                onClick={() => setActiveTab('servicos')}
-                className="p-3 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center gap-2.5 text-left hover:bg-slate-50 transition-colors"
-              >
-                <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">receipt_long</span>
-                </div>
-                <div>
-                  <span className="font-bold text-xs text-slate-900 block leading-tight">Ver Extrato</span>
-                  <span className="text-[10px] text-slate-500">Saldos & OS</span>
-                </div>
-              </button>
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* 1. Novo Serviço */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('novo-servico')}
+                  className="p-3 bg-white border border-slate-200/90 rounded-2xl shadow-sm flex items-center gap-2.5 text-left hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#04122e] flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[22px]">add_circle</span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-xs text-slate-900 block truncate">Novo Serviço</span>
+                    <span className="text-[10px] text-slate-500 block truncate">Lançar sinal</span>
+                  </div>
+                </button>
+
+                {/* 2. Calculadora de BTUs */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('btus')}
+                  className="p-3 bg-white border border-emerald-300/80 bg-emerald-50/30 rounded-2xl shadow-sm flex items-center gap-2.5 text-left hover:bg-emerald-50 active:scale-95 transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#006c49] flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[22px]">mode_fan</span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold text-xs text-emerald-950 block truncate">Calc. BTUs</span>
+                      <span className="text-[9px] bg-emerald-200 text-[#003823] px-1 rounded font-bold">NOVO</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-700 block truncate">Cálculo térmico</span>
+                  </div>
+                </button>
+
+                {/* 3. Ordens de Serviço (OS) */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('ordens')}
+                  className="p-3 bg-white border border-slate-200/90 rounded-2xl shadow-sm flex items-center gap-2.5 text-left hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[22px]">assignment</span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-xs text-slate-900 block truncate">Ordens (OS)</span>
+                    <span className="text-[10px] text-slate-500 block truncate">Fotos & Assinar</span>
+                  </div>
+                </button>
+
+                {/* 4. Orçamentos */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('orcamentos')}
+                  className="p-3 bg-white border border-slate-200/90 rounded-2xl shadow-sm flex items-center gap-2.5 text-left hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[22px]">request_quote</span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-xs text-slate-900 block truncate">Orçamentos</span>
+                    <span className="text-[10px] text-slate-500 block truncate">Gerar proposta</span>
+                  </div>
+                </button>
+
+                {/* 5. Meus Clientes */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('clientes')}
+                  className="p-3 bg-white border border-slate-200/90 rounded-2xl shadow-sm flex items-center gap-2.5 text-left hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[22px]">group</span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-xs text-slate-900 block truncate">Clientes</span>
+                    <span className="text-[10px] text-slate-500 block truncate">Contatos & Zap</span>
+                  </div>
+                </button>
+
+                {/* 6. Extrato & Saldos */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('servicos')}
+                  className="p-3 bg-white border border-slate-200/90 rounded-2xl shadow-sm flex items-center gap-2.5 text-left hover:bg-slate-50 active:scale-95 transition-all cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[22px]">receipt_long</span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-bold text-xs text-slate-900 block truncate">Ver Extrato</span>
+                    <span className="text-[10px] text-slate-500 block truncate">Saldos & Pix</span>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {/* Services for today */}
@@ -771,6 +976,171 @@ export const MobileFieldApp: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* VIEW: CALCULADORA DE BTUS */}
+        {activeTab === 'btus' && (
+          <div className="flex flex-col w-full pb-8">
+            <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between sticky top-16 z-30 shadow-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('inicio')}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                  title="Voltar ao Início"
+                >
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-emerald-600 text-[20px]">mode_fan</span>
+                  <span className="font-bold text-sm text-[#04122e]">Calculadora BTUs</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                title="Menu"
+              >
+                <span className="material-symbols-outlined text-[18px]">menu</span>
+              </button>
+            </div>
+            <div className="w-full">
+              <BtuCalculatorView />
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: ORDENS DE SERVIÇO (OS) */}
+        {activeTab === 'ordens' && (
+          <div className="flex flex-col w-full pb-8">
+            <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between sticky top-16 z-30 shadow-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('inicio')}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                  title="Voltar ao Início"
+                >
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-indigo-600 text-[20px]">assignment</span>
+                  <span className="font-bold text-sm text-[#04122e]">Ordens de Serviço (OS)</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                title="Menu"
+              >
+                <span className="material-symbols-outlined text-[18px]">menu</span>
+              </button>
+            </div>
+            <div className="w-full">
+              <OrdersView />
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: ORÇAMENTOS */}
+        {activeTab === 'orcamentos' && (
+          <div className="flex flex-col w-full pb-8">
+            <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between sticky top-16 z-30 shadow-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('inicio')}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                  title="Voltar ao Início"
+                >
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-purple-600 text-[20px]">request_quote</span>
+                  <span className="font-bold text-sm text-[#04122e]">Orçamentos & Propostas</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                title="Menu"
+              >
+                <span className="material-symbols-outlined text-[18px]">menu</span>
+              </button>
+            </div>
+            <div className="w-full">
+              <BudgetsView />
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: PLANOS & ASSINATURA */}
+        {activeTab === 'planos' && (
+          <div className="flex flex-col w-full pb-8">
+            <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between sticky top-16 z-30 shadow-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('inicio')}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                  title="Voltar ao Início"
+                >
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-blue-700 text-[20px]">credit_card</span>
+                  <span className="font-bold text-sm text-[#04122e]">Assinatura & Planos</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                title="Menu"
+              >
+                <span className="material-symbols-outlined text-[18px]">menu</span>
+              </button>
+            </div>
+            <div className="w-full">
+              <PlansView />
+            </div>
+          </div>
+        )}
+
+        {/* VIEW: EQUIPE */}
+        {activeTab === 'equipe' && (
+          <div className="flex flex-col w-full pb-8">
+            <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between sticky top-16 z-30 shadow-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('inicio')}
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                  title="Voltar ao Início"
+                >
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-slate-700 text-[20px]">groups</span>
+                  <span className="font-bold text-sm text-[#04122e]">Equipe de Técnicos</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen(true)}
+                className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+                title="Menu"
+              >
+                <span className="material-symbols-outlined text-[18px]">menu</span>
+              </button>
+            </div>
+            <div className="w-full">
+              <TeamView />
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Interactive Success Toast (Image 5) */}
@@ -803,55 +1173,64 @@ export const MobileFieldApp: React.FC = () => {
         </div>
       </div>
 
-      {/* Fixed Bottom Tab Bar (Image 5) */}
+      {/* Fixed Bottom Tab Bar */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto w-full z-40 bg-[#f8f9ff]/95 backdrop-blur-xl border-t border-slate-200/80 shadow-[0_-2px_12px_rgba(26,39,68,0.06)]">
-        <div className="flex items-center justify-around h-16 px-4">
+        <div className="flex items-center justify-around h-16 px-2">
           <button
             type="button"
             onClick={() => setActiveTab('inicio')}
-            className={`flex flex-col items-center justify-center flex-1 h-12 transition-colors ${
+            className={`flex flex-col items-center justify-center flex-1 h-12 transition-colors cursor-pointer ${
               activeTab === 'inicio' ? 'text-[#04122e] font-bold' : 'text-[#45464d] hover:text-[#04122e]'
             }`}
           >
-            <span className="material-symbols-outlined text-[24px]">home</span>
-            <span className="text-[11px] mt-0.5">Início</span>
+            <span className="material-symbols-outlined text-[22px]">home</span>
+            <span className="text-[10px] mt-0.5">Início</span>
             {activeTab === 'inicio' && <span className="w-1 h-1 rounded-full bg-[#04122e] mt-0.5"></span>}
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('clientes')}
-            className={`flex flex-col items-center justify-center flex-1 h-12 transition-colors ${
-              activeTab === 'clientes' ? 'text-[#04122e] font-bold' : 'text-[#45464d] hover:text-[#04122e]'
+            onClick={() => setActiveTab('btus')}
+            className={`flex flex-col items-center justify-center flex-1 h-12 transition-colors cursor-pointer ${
+              activeTab === 'btus' ? 'text-[#006c49] font-bold' : 'text-[#45464d] hover:text-[#006c49]'
             }`}
           >
-            <span className="material-symbols-outlined text-[24px]">group</span>
-            <span className="text-[11px] mt-0.5">Clientes</span>
-            {activeTab === 'clientes' && <span className="w-1 h-1 rounded-full bg-[#04122e] mt-0.5"></span>}
+            <span className="material-symbols-outlined text-[22px]">mode_fan</span>
+            <span className="text-[10px] mt-0.5">BTUs</span>
+            {activeTab === 'btus' && <span className="w-1 h-1 rounded-full bg-[#006c49] mt-0.5"></span>}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('ordens')}
+            className={`flex flex-col items-center justify-center flex-1 h-12 transition-colors cursor-pointer ${
+              activeTab === 'ordens' ? 'text-[#04122e] font-bold' : 'text-[#45464d] hover:text-[#04122e]'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[22px]">assignment</span>
+            <span className="text-[10px] mt-0.5">Ordens</span>
+            {activeTab === 'ordens' && <span className="w-1 h-1 rounded-full bg-[#04122e] mt-0.5"></span>}
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('servicos')}
-            className={`flex flex-col items-center justify-center flex-1 h-12 transition-colors ${
+            className={`flex flex-col items-center justify-center flex-1 h-12 transition-colors cursor-pointer ${
               activeTab === 'servicos' ? 'text-[#04122e] font-bold' : 'text-[#45464d] hover:text-[#04122e]'
             }`}
           >
-            <span className="material-symbols-outlined text-[24px]">build</span>
-            <span className="text-[11px] mt-0.5">Serviços</span>
+            <span className="material-symbols-outlined text-[22px]">calculate</span>
+            <span className="text-[10px] mt-0.5">Serviços</span>
             {activeTab === 'servicos' && <span className="w-1 h-1 rounded-full bg-[#04122e] mt-0.5"></span>}
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('agenda')}
-            className={`flex flex-col items-center justify-center flex-1 h-12 transition-colors ${
-              activeTab === 'agenda' ? 'text-[#04122e] font-bold' : 'text-[#45464d] hover:text-[#04122e]'
-            }`}
+            onClick={() => setIsDrawerOpen(true)}
+            className="flex flex-col items-center justify-center flex-1 h-12 text-[#45464d] hover:text-[#04122e] transition-colors cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[24px]">calendar_today</span>
-            <span className="text-[11px] mt-0.5">Agenda</span>
-            {activeTab === 'agenda' && <span className="w-1 h-1 rounded-full bg-[#04122e] mt-0.5"></span>}
+            <span className="material-symbols-outlined text-[22px]">menu</span>
+            <span className="text-[10px] mt-0.5">Menu</span>
           </button>
         </div>
       </nav>
