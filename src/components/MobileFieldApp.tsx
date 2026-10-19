@@ -733,7 +733,7 @@ export const MobileFieldApp: React.FC = () => {
                     onClick={() => openUpgradeModal(isServicesLimitReached ? 'services' : 'clients')}
                     className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#006c49] text-[#6cf8bb] hover:bg-[#005236] transition-colors cursor-pointer"
                   >
-                    Upgrade PRO
+                    {currentCompany?.plan === 'profissional' ? 'Upgrade EMPRESA' : 'Upgrade PRO'}
                   </button>
                 </div>
 

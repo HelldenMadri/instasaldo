@@ -214,7 +214,11 @@ export const ServicesView: React.FC = () => {
                 className="px-4 py-2.5 bg-gradient-to-r from-[#006c49] to-[#04122e] hover:from-[#005236] hover:to-[#1a2744] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px] text-[#6cf8bb]">rocket_launch</span>
-                <span>Fazer Upgrade para Profissional (120 serviços/mês)</span>
+                <span>
+                  {currentCompany.plan === 'profissional'
+                    ? 'Fazer Upgrade para Empresa (Serviços Ilimitados)'
+                    : 'Fazer Upgrade para Profissional (120 serviços/mês)'}
+                </span>
               </button>
             ) : (
               <button

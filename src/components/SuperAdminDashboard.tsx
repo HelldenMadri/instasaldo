@@ -1385,7 +1385,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   subscribers: '520 assinantes',
                   mrr: 'R$ 50.440,00/mês',
                   badge: 'Mais Popular',
-                  features: ['Suporte via WhatsApp e E-mail', 'Orçamentos & conversão em OS', 'Fotos antes/depois e assinatura na tela', 'Até 250 clientes'],
+                  features: ['Suporte via WhatsApp e E-mail', 'Orçamentos & conversão em OS', 'Fotos antes/depois e assinatura na tela', 'Até 50 clientes'],
                 },
                 {
                   tier: 'empresa',

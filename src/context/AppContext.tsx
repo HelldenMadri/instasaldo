@@ -57,10 +57,10 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       'Comprovante em PDF profissional',
       'Lembretes de manutenção preventiva',
       'Suporte prioritário via WhatsApp e E-mail',
-      'Até 250 clientes ativos',
+      'Até 50 clientes ativos',
     ],
     limits: {
-      maxClients: 250,
+      maxClients: 50,
       maxOrdersPerMonth: 120,
       maxTeamMembers: 3,
       supportChannel: 'WhatsApp & E-mail (Prioritário)',
