@@ -17,9 +17,10 @@ export const OrdersView: React.FC = () => {
   const [photoOrder, setPhotoOrder] = useState<WorkOrder | null>(null);
   const [whatsAppOrder, setWhatsAppOrder] = useState<WorkOrder | null>(null);
 
-  // Photo upload simulation
+  // Photo upload
   const [photoCaption, setPhotoCaption] = useState('');
   const [photoType, setPhotoType] = useState<'antes' | 'depois'>('antes');
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState<string | null>(null);
 
   const filteredOrders = workOrders.filter((o) => {
     const matchesSearch =
@@ -30,6 +31,17 @@ export const OrdersView: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setUploadedPhotoUrl(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAddPhoto = () => {
     if (!photoOrder) return;
     const sampleUrls = {
@@ -39,7 +51,7 @@ export const OrdersView: React.FC = () => {
 
     const newPhoto = {
       id: `p-${Date.now()}`,
-      url: sampleUrls[photoType],
+      url: uploadedPhotoUrl || sampleUrls[photoType],
       caption: photoCaption || (photoType === 'antes' ? 'Condição antes do atendimento' : 'Serviço finalizado e testado'),
       type: photoType,
       timestamp: new Date().toLocaleString('pt-BR'),
@@ -50,7 +62,18 @@ export const OrdersView: React.FC = () => {
     });
 
     setPhotoCaption('');
+    setUploadedPhotoUrl(null);
     setPhotoOrder(null);
+  };
+
+  const handleSettleBalance = (order: WorkOrder) => {
+    if (window.confirm(`Confirmar o recebimento total do saldo de ${formatCurrency(order.pendingBalance)} via Pix ou Dinheiro?`)) {
+      updateWorkOrder(order.id, {
+        depositValue: order.totalValue,
+        pendingBalance: 0,
+        status: 'concluido',
+      });
+    }
   };
 
   return (
@@ -190,6 +213,20 @@ export const OrdersView: React.FC = () => {
                     {formatCurrency(order.pendingBalance)}
                   </span>
                 </div>
+
+                {order.pendingBalance > 0 && (
+                  <div className="col-span-3 pt-2 mt-1 border-t border-slate-200/60 flex items-center justify-between text-left">
+                    <span className="text-[11px] text-amber-800 font-medium">Aguardando quitação na entrega</span>
+                    <button
+                      type="button"
+                      onClick={() => handleSettleBalance(order)}
+                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-lg shadow-sm flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">payments</span>
+                      <span>Receber Saldo (Quitar)</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Photos Gallery Strip */}
@@ -374,6 +411,32 @@ export const OrdersView: React.FC = () => {
                   Depois
                 </button>
               </div>
+            </div>
+
+            {/* Upload do Arquivo / Foto da Câmera */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Selecionar Imagem (ou tirar foto)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileChange}
+                className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-[#04122e] hover:file:bg-blue-100 cursor-pointer"
+              />
+              {uploadedPhotoUrl && (
+                <div className="mt-2 relative w-full h-28 rounded-lg overflow-hidden border border-slate-200">
+                  <img
+                    src={uploadedPhotoUrl}
+                    alt="Prévia da foto"
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-1 right-1 text-[9px] bg-black/70 text-white px-1.5 py-0.5 rounded font-mono">
+                    Foto selecionada
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
