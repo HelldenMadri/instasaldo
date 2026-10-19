@@ -21,6 +21,8 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 .env.*
+1.env*
+*.env.example*
 !.env.example
 
 # Credentials & Keys
